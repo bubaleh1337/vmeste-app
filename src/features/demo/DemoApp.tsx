@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { APP_NAME } from "@/lib/config";
+import { BrandMark } from "@/features/public/BrandMark";
 import { ru } from "@/lib/i18n/ru";
 import {
   calculateActualSaved,
@@ -101,7 +102,7 @@ export function DemoApp() {
     <div className="app-shell">
       <aside className="sidebar" aria-label="Основная навигация">
         <button className="brand" onClick={() => navigate("goals")} aria-label="Мои цели">
-          <span className="brand-mark">{APP_NAME.slice(0, 1).toUpperCase()}</span>
+          <BrandMark />
           <span className="brand-text">{APP_NAME}</span>
         </button>
         <nav className="side-nav">

@@ -171,3 +171,7 @@ supabase/migrations/202609010004_duplicate_protection.sql
 Apply it to both development and production Supabase projects before deploying the code.
 
 Duplicate reconciliation is bank-agnostic. Exact file SHA-256 remains the first guard. When a statement exposes a transaction/reference ID it is used automatically; otherwise the importer reconciles date, amount, currency, debit/credit direction and normalized bank description while preserving the number of genuinely identical operations. If an account/IBAN/card scope can be detected, only its SHA-256 hash is sent to and stored by the backend. Unknown banks continue through the generic parser rather than being rejected by bank name.
+
+## Stage 4.9 — app icon
+
+Version `0.12.0` introduces the selected app mark: two connected rounded forms representing a shared goal. The same mark is used in the interface, browser favicon, Apple Touch Icon and installable PWA icons, including a maskable variant. No database migration or new dependency is required.
