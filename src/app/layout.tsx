@@ -12,6 +12,13 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: tr(locale, `${APP_NAME} — совместные накопления`, `${APP_NAME} — shared savings`),
     description: tr(locale, "Совместные накопления на цели и отдельная аналитика расходов.", "Shared savings goals with separate expense analytics."),
+    icons: {
+      icon: [
+        { url: "/favicon.ico", sizes: "16x16 32x32 48x48" },
+        { url: "/icons/favicon.svg", type: "image/svg+xml" },
+      ],
+      apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+    },
     robots: { index: indexingEnabled, follow: indexingEnabled },
   };
 }

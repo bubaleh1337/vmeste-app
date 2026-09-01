@@ -2,13 +2,14 @@ import Link from "next/link";
 import { APP_NAME, SUPPORT_EMAIL, SUPPORT_TELEGRAM_LABEL, SUPPORT_TELEGRAM_URL } from "@/lib/config";
 import { tr, type AppLocale } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/features/preferences/LanguageSwitcher";
+import { BrandMark } from "@/features/public/BrandMark";
 
 export function PublicLanding({ locale }: { locale: AppLocale }) {
   return (
     <main className="public-landing">
       <section className="public-hero">
         <div className="public-hero-copy">
-          <div className="public-locale-row"><span className="brand-mark large" aria-hidden="true">{APP_NAME.slice(0, 1).toUpperCase()}</span><LanguageSwitcher locale={locale} /></div>
+          <div className="public-locale-row"><BrandMark large /><LanguageSwitcher locale={locale} /></div>
           <span className="eyebrow">{tr(locale, "Совместные накопления без лишнего шума", "Shared savings without the clutter")}</span>
           <h1>{APP_NAME}</h1>
           <p>{tr(locale, "Общие цели, понятный прогресс и отдельная аналитика расходов. Расходы помогают увидеть, сколько можно было бы отложить, но никогда не уменьшают накопленную сумму.", "Shared goals, clear progress and separate expense analytics. Expenses show what you could have saved but never reduce your saved balance.")}</p>
