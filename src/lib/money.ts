@@ -1,4 +1,4 @@
-export type CurrencyCode = "KZT" | "USD" | "EUR";
+export type CurrencyCode = "KZT" | "USD" | "EUR" | "RUB";
 export type SavingsType =
   | "contribution"
   | "interest"
@@ -113,13 +113,14 @@ export function parseMajorUnits(input: string): bigint | null {
   return BigInt(whole) * 100n + BigInt((fraction + "00").slice(0, 2));
 }
 
-export function formatMoney(amountMinor: bigint, currency: CurrencyCode = "KZT"): string {
+export function formatMoney(amountMinor: bigint, currency: CurrencyCode = "KZT", locale = "ru-RU"): string {
   const negative = amountMinor < 0n;
   const absolute = negative ? -amountMinor : amountMinor;
   const whole = absolute / 100n;
   const fraction = absolute % 100n;
   const grouped = whole.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-  const suffix = currency === "KZT" ? "₸" : currency;
-  const fractionPart = currency === "KZT" || fraction === 0n ? "" : `,${fraction.toString().padStart(2, "0")}`;
+  const suffix = currency === "KZT" ? "₸" : currency === "RUB" ? "₽" : currency;
+  const decimal = locale.toLowerCase().startsWith("en") ? "." : ",";
+  const fractionPart = currency === "KZT" || currency === "RUB" || fraction === 0n ? "" : `${decimal}${fraction.toString().padStart(2, "0")}`;
   return `${negative ? "−" : ""}${grouped}${fractionPart} ${suffix}`;
 }

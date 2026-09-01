@@ -6,6 +6,7 @@ import {
   parseMajorUnits,
   requiredMonthlyAverage,
   signedSavingsAmount,
+  formatMoney,
   type SavingsType,
 } from "./money";
 
@@ -74,5 +75,13 @@ describe("minor-unit precision", () => {
   it("parses decimal input exactly into integer minor units", () => {
     expect(parseMajorUnits("1234.56")).toBe(123456n);
     expect(parseMajorUnits("1 234,50")).toBe(123450n);
+  });
+});
+
+
+describe("currency presentation", () => {
+  it("formats RUB without floating-point arithmetic", () => {
+    expect(formatMoney(123456n, "RUB", "ru-RU")).toBe("1 234 ₽");
+    expect(formatMoney(123456n, "RUB", "en-US")).toBe("1 234 ₽");
   });
 });

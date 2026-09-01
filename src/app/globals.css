@@ -736,3 +736,69 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .support-link-card strong { overflow-wrap: anywhere; font-size: 17px; }
 .support-link-card small { color: var(--muted); line-height: 1.45; }
 @media (max-width: 620px) { .support-links { grid-template-columns: 1fr; } }
+
+/* Stage 4.3: user-selectable visual themes and typography. */
+[data-theme="sage"] {
+  --bg: #f7f4ee; --card: #fffcf7; --text: #282723; --muted: #6d6a63;
+  --sage: #6f806a; --sage-dark: #53624f; --sage-soft: #e5e9e1;
+  --rose: #c88f87; --rose-soft: #f3e5e1; --gold: #c2a15c; --gold-soft: #f2ead8;
+  --line: #ded9cf; --line-soft: #ebe6dc;
+}
+[data-theme="rose"] {
+  --bg: #faf3f3; --card: #fffafa; --text: #302627; --muted: #756567;
+  --sage: #b76f78; --sage-dark: #8e4f58; --sage-soft: #f5e1e4;
+  --rose: #d79aa2; --rose-soft: #f8e8ea; --gold: #c8a36c; --gold-soft: #f5ead9;
+  --line: #e4d5d7; --line-soft: #f0e3e5;
+}
+[data-theme="lavender"] {
+  --bg: #f6f3fa; --card: #fdfbff; --text: #2d2933; --muted: #6f6878;
+  --sage: #8173a5; --sage-dark: #625580; --sage-soft: #eae5f4;
+  --rose: #b98da7; --rose-soft: #f2e5ed; --gold: #b69a69; --gold-soft: #f1e9da;
+  --line: #ded7e8; --line-soft: #ece7f2;
+}
+[data-theme="ocean"] {
+  --bg: #f1f6f6; --card: #fbfefe; --text: #233033; --muted: #607276;
+  --sage: #4f7d82; --sage-dark: #365e63; --sage-soft: #dcebee;
+  --rose: #b57f83; --rose-soft: #f0e2e3; --gold: #b3965c; --gold-soft: #efe8d7;
+  --line: #d4e0e1; --line-soft: #e5eeee;
+}
+[data-theme="sky"] {
+  --bg: #f2f7fb; --card: #fbfdff; --text: #24303b; --muted: #627180;
+  --sage: #6485a4; --sage-dark: #486987; --sage-soft: #e0ebf4;
+  --rose: #ba8990; --rose-soft: #f1e4e6; --gold: #b79b63; --gold-soft: #f0e8d7;
+  --line: #d5e0e9; --line-soft: #e6edf3;
+}
+[data-theme="honey"] {
+  --bg: #faf6ed; --card: #fffdf8; --text: #312d25; --muted: #776e5e;
+  --sage: #a1844f; --sage-dark: #7b6235; --sage-soft: #f1e8d5;
+  --rose: #bd877a; --rose-soft: #f4e4df; --gold: #c69b45; --gold-soft: #f7ebcc;
+  --line: #e4dac6; --line-soft: #efe7d7;
+}
+
+[data-font="onest"] body { font-family: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif; }
+[data-font="manrope"] body { font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif; }
+[data-font="system"] body { font-family: Georgia, "Times New Roman", serif; }
+
+.language-switch {
+  min-width: 42px; min-height: 34px; display: inline-grid; place-items: center;
+  border: 1px solid var(--line); border-radius: 999px; background: var(--card);
+  color: var(--sage-dark); text-decoration: none; font-size: 12px; font-weight: 800;
+}
+.language-switch:hover { background: var(--sage-soft); }
+.theme-choice-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+.theme-choice { display: grid; gap: 7px; border: 1px solid var(--line); border-radius: 14px; padding: 10px; background: var(--card); }
+.theme-swatch { height: 34px; border-radius: 10px; border: 1px solid rgba(0,0,0,.06); }
+.theme-swatch.sage { background: #6f806a; } .theme-swatch.rose { background: #b76f78; }
+.theme-swatch.lavender { background: #8173a5; } .theme-swatch.ocean { background: #4f7d82; }
+.theme-swatch.sky { background: #6485a4; } .theme-swatch.honey { background: #c69b45; }
+.support-spotlight { margin-top: 28px; display: grid; gap: 12px; }
+.support-contact-row { display: grid; gap: 10px; grid-template-columns: 1fr; }
+.support-contact-row a { text-decoration: none; color: inherit; }
+.support-contact-row strong, .support-contact-row small { display: block; }
+.support-contact-row small { color: var(--muted); margin-top: 4px; }
+@media (min-width: 720px) { .theme-choice-grid { grid-template-columns: repeat(3, minmax(0,1fr)); } .support-contact-row { grid-template-columns: 1fr 1fr; } }
+.auth-card-top, .legal-topline, .public-locale-row, .auth-locale { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.auth-stack { width: min(100%, 460px); display: grid; gap: 10px; }
+.auth-stack .auth-card { width: 100%; }
+.preference-fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.preference-fieldset legend { font-size: 13px; font-weight: 720; margin-bottom: 8px; }

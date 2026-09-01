@@ -1,84 +1,21 @@
 import type { LiveSaving } from "@/features/live/types";
 import { formatMoney, type CurrencyCode } from "@/lib/money";
-import { monthLabelRu } from "@/features/expenses/analytics";
+import { localeTag, tr, type AppLocale } from "@/lib/i18n";
+import { monthLabel } from "@/features/expenses/analytics";
 import { calculateSavingsForecast, monthlySavingsSeries } from "./analytics";
 
-function dateLongRu(value: string): string {
-  return new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", year: "numeric" }).format(new Date(`${value}T12:00:00Z`));
+function dateLong(value: string, locale: AppLocale): string { return new Intl.DateTimeFormat(localeTag(locale), { day:"numeric", month:"long", year:"numeric" }).format(new Date(`${value}T12:00:00Z`)); }
+function statusContent(status: ReturnType<typeof calculateSavingsForecast>["status"], locale: AppLocale): { title:string; text:string; tone:string } {
+  if (status === "reached") return {title:tr(locale,"Цель достигнута","Goal reached"),text:tr(locale,"Накопленная сумма уже достигла заданной цели.","Your saved amount has reached the goal."),tone:"good"};
+  if (status === "expired") return {title:tr(locale,"Срок цели прошёл","Deadline passed"),text:tr(locale,"Показываем фактический результат без деления на оставшиеся дни.","Showing the actual result without dividing by remaining days."),tone:"warning"};
+  if (status === "on_track") return {title:tr(locale,"Идём по плану","On track"),text:tr(locale,"Текущий темп позволяет уложиться в установленный срок.","Your current pace is enough to meet the deadline."),tone:"good"};
+  if (status === "behind") return {title:tr(locale,"Нужно ускорить темп","Need a faster pace"),text:tr(locale,"При текущей динамике цель будет достигнута позже заданного срока.","At the current pace the goal will be reached after the deadline."),tone:"warning"};
+  return {title:tr(locale,"Пока рано оценивать темп","Not enough data yet"),text:tr(locale,"Прогноз появится после минимум двух операций на разных датах и 14 дней истории.","A forecast appears after at least two transactions on different dates and 14 days of history."),tone:"neutral"};
 }
 
-function statusContent(status: ReturnType<typeof calculateSavingsForecast>["status"]): { title: string; text: string; tone: string } {
-  if (status === "reached") return { title: "Цель достигнута", text: "Накопленная сумма уже достигла заданной цели.", tone: "good" };
-  if (status === "expired") return { title: "Срок цели прошёл", text: "Показываем фактический результат без деления на оставшиеся дни.", tone: "warning" };
-  if (status === "on_track") return { title: "Идём по плану", text: "Текущий темп позволяет уложиться в установленный срок.", tone: "good" };
-  if (status === "behind") return { title: "Нужно ускорить темп", text: "При текущей динамике цель будет достигнута позже заданного срока.", tone: "warning" };
-  return { title: "Пока рано оценивать темп", text: "Прогноз появится после минимум двух операций на разных датах и 14 дней истории.", tone: "neutral" };
-}
-
-export function SavingsDashboard({
-  savings,
-  actualSavedMinor,
-  targetAmountMinor,
-  targetDate,
-  currencyCode,
-  viewerTimeZone,
-  now = new Date(),
-}: {
-  savings: LiveSaving[];
-  actualSavedMinor: bigint;
-  targetAmountMinor: bigint;
-  targetDate: string;
-  currencyCode: CurrencyCode;
-  viewerTimeZone?: string;
-  now?: Date;
-}) {
-  const series = monthlySavingsSeries(savings, now, viewerTimeZone, 6);
-  const forecast = calculateSavingsForecast({ savings, actualSavedMinor, targetAmountMinor, targetDate, now, timeZone: viewerTimeZone });
-  const status = statusContent(forecast.status);
-  const maxAbs = series.reduce((max, item) => {
-    const absolute = item.netMinor < 0n ? -item.netMinor : item.netMinor;
-    return absolute > max ? absolute : max;
-  }, 0n);
-  const hasMovement = maxAbs > 0n;
-
-  return (
-    <div className="savings-dashboard">
-      <div className="savings-forecast-grid">
-        <section className={`savings-forecast-card ${status.tone}`}>
-          <span>Темп накоплений</span>
-          <strong>{status.title}</strong>
-          <small>{status.text}</small>
-        </section>
-        <section className="savings-forecast-card">
-          <span>Оценка достижения</span>
-          <strong>{forecast.projectedDate ? dateLongRu(forecast.projectedDate) : forecast.status === "reached" ? "Сегодня" : "Недостаточно данных"}</strong>
-          <small>{forecast.projectedDate && forecast.status !== "reached" ? "Оценка по текущей истории накоплений, а не гарантия." : "Будет рассчитана автоматически по реальной динамике."}</small>
-        </section>
-      </div>
-
-      <section className="panel savings-monthly-panel" aria-labelledby="savings-monthly-heading">
-        <div className="panel-heading">
-          <div><span className="eyebrow">Последние 6 месяцев</span><h3 id="savings-monthly-heading">Динамика накоплений</h3></div>
-          <strong className="dashboard-total">{formatMoney(actualSavedMinor, currencyCode)}</strong>
-        </div>
-        {hasMovement ? (
-          <div className="savings-month-list" aria-label="Текстовая динамика накоплений по месяцам">
-            {series.map((item) => {
-              const absolute = item.netMinor < 0n ? -item.netMinor : item.netMinor;
-              const width = maxAbs === 0n ? 0 : Number((absolute * 1000n) / maxAbs) / 10;
-              const negative = item.netMinor < 0n;
-              return (
-                <div className="savings-month-row" key={item.monthKey}>
-                  <span className="savings-month-label">{monthLabelRu(item.monthKey)}</span>
-                  <div className="savings-month-bar-track" aria-hidden="true"><span className={negative ? "negative" : "positive"} style={{ width: `${width}%` }} /></div>
-                  <strong className={negative ? "negative-amount" : ""}>{item.netMinor > 0n ? "+" : ""}{formatMoney(item.netMinor, currencyCode)}</strong>
-                  <small>Баланс к концу месяца: {formatMoney(item.endingBalanceMinor, currencyCode)}</small>
-                </div>
-              );
-            })}
-          </div>
-        ) : <p className="empty-text">Динамика появится после первой операции накоплений.</p>}
-      </section>
-    </div>
-  );
+export function SavingsDashboard({ savings, actualSavedMinor, targetAmountMinor, targetDate, currencyCode, viewerTimeZone, now = new Date(), locale = "ru" }: { savings:LiveSaving[]; actualSavedMinor:bigint; targetAmountMinor:bigint; targetDate:string; currencyCode:CurrencyCode; viewerTimeZone?:string; now?:Date; locale?:AppLocale }) {
+  const series=monthlySavingsSeries(savings,now,viewerTimeZone,6); const forecast=calculateSavingsForecast({savings,actualSavedMinor,targetAmountMinor,targetDate,now,timeZone:viewerTimeZone}); const status=statusContent(forecast.status,locale); const maxAbs=series.reduce((max,item)=>{const absolute=item.netMinor<0n?-item.netMinor:item.netMinor;return absolute>max?absolute:max;},0n); const hasMovement=maxAbs>0n; const money=(v:bigint)=>formatMoney(v,currencyCode,localeTag(locale));
+  return <div className="savings-dashboard"><div className="savings-forecast-grid"><section className={`savings-forecast-card ${status.tone}`}><span>{tr(locale,"Темп накоплений","Savings pace")}</span><strong>{status.title}</strong><small>{status.text}</small></section><section className="savings-forecast-card"><span>{tr(locale,"Оценка достижения","Estimated completion")}</span><strong>{forecast.projectedDate?dateLong(forecast.projectedDate,locale):forecast.status==="reached"?tr(locale,"Сегодня","Today"):tr(locale,"Недостаточно данных","Not enough data")}</strong><small>{forecast.projectedDate&&forecast.status!=="reached"?tr(locale,"Оценка по текущей истории накоплений, а не гарантия.","Estimate based on current history, not a guarantee."):tr(locale,"Будет рассчитана автоматически по реальной динамике.","Calculated automatically from real savings history.")}</small></section></div>
+    <section className="panel savings-monthly-panel" aria-labelledby="savings-monthly-heading"><div className="panel-heading"><div><span className="eyebrow">{tr(locale,"Последние 6 месяцев","Last 6 months")}</span><h3 id="savings-monthly-heading">{tr(locale,"Динамика накоплений","Savings trend")}</h3></div><strong className="dashboard-total">{money(actualSavedMinor)}</strong></div>{hasMovement?<div className="savings-month-list" aria-label={tr(locale,"Текстовая динамика накоплений по месяцам","Monthly savings trend in text")}>{series.map((item)=>{const absolute=item.netMinor<0n?-item.netMinor:item.netMinor;const width=maxAbs===0n?0:Number((absolute*1000n)/maxAbs)/10;const negative=item.netMinor<0n;return <div className="savings-month-row" key={item.monthKey}><span className="savings-month-label">{monthLabel(item.monthKey,localeTag(locale))}</span><div className="savings-month-bar-track" aria-hidden="true"><span className={negative?"negative":"positive"} style={{width:`${width}%`}} /></div><strong className={negative?"negative-amount":""}>{item.netMinor>0n?"+":""}{money(item.netMinor)}</strong><small>{tr(locale,"Баланс к концу месяца:","End-of-month balance:")} {money(item.endingBalanceMinor)}</small></div>;})}</div>:<p className="empty-text">{tr(locale,"Динамика появится после первой операции накоплений.","The trend will appear after the first savings transaction.")}</p>}</section>
+  </div>;
 }

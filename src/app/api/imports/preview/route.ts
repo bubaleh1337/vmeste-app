@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { getCookieLocale } from "@/lib/i18n/server";
+import { tr } from "@/lib/i18n";
 
 const rowSchema = z.object({
   rowNumber: z.number().int().positive(),
@@ -24,12 +26,13 @@ const requestSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const locale = await getCookieLocale();
   const parsed = requestSchema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) return NextResponse.json({ error: "Некорректные данные предварительной проверки." }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: tr(locale, "Некорректные данные предварительной проверки.", "Invalid preview data.") }, { status: 400 });
 
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
-  if (!claims?.claims?.sub) return NextResponse.json({ error: "Требуется вход." }, { status: 401 });
+  if (!claims?.claims?.sub) return NextResponse.json({ error: tr(locale, "Требуется вход.", "Sign-in required.") }, { status: 401 });
 
   const { data, error } = await supabase.rpc("preview_financial_import", {
     p_goal_id: parsed.data.goalId,
@@ -39,7 +42,7 @@ export async function POST(request: Request) {
   });
   if (error) {
     if (process.env.NODE_ENV === "development") console.error("[Import preview]", error.code, error.message);
-    return NextResponse.json({ error: "Не удалось проверить дубли. Финансовые данные не были изменены." }, { status: 400 });
+    return NextResponse.json({ error: tr(locale, "Не удалось проверить дубли. Финансовые данные не были изменены.", "Could not check duplicates. Financial data was not changed.") }, { status: 400 });
   }
   return NextResponse.json(data);
 }

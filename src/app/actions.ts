@@ -7,11 +7,12 @@ import { parseMajorUnits } from "@/lib/money";
 import { createClient } from "@/lib/supabase/server";
 import { safeRelativePath } from "@/lib/supabase/redirect";
 import { isValidTimeZone } from "@/lib/timezone";
+import { dbLocale, normalizeLocale } from "@/lib/i18n";
 
 const createGoalSchema = z.object({
   title: z.string().trim().min(1).max(120),
   targetAmount: z.string().trim().min(1),
-  currencyCode: z.enum(["KZT", "USD", "EUR"]),
+  currencyCode: z.enum(["KZT", "USD", "EUR", "RUB"]),
   targetDate: z.iso.date(),
 });
 
@@ -48,9 +49,11 @@ export async function updateDisplayNameAction(formData: FormData) {
   const result = z.object({
     displayName: z.string().trim().min(1).max(80),
     timeZone: z.string().trim().min(1).max(80),
+    locale: z.enum(["ru", "en"]).default("ru"),
   }).safeParse({
     displayName: formData.get("displayName"),
     timeZone: formData.get("timeZone"),
+    locale: formData.get("locale") ?? "ru",
   });
   if (!result.success) redirect("/profile/setup?error=invalid_profile");
 
@@ -61,7 +64,7 @@ export async function updateDisplayNameAction(formData: FormData) {
   const userId = data?.claims?.sub;
   if (!userId) redirect("/login");
 
-  const { error } = await supabase.from("profiles").update({ display_name: result.data.displayName, timezone: result.data.timeZone }).eq("id", userId);
+  const { error } = await supabase.from("profiles").update({ display_name: result.data.displayName, timezone: result.data.timeZone, locale: dbLocale(normalizeLocale(result.data.locale)) }).eq("id", userId);
   if (error) redirect("/profile/setup?error=save_failed");
 
   const nextValue = formData.get("next");

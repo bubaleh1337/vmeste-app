@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { buildUserExport } from "@/server/export/repository";
+import { getCookieLocale } from "@/lib/i18n/server";
+import { tr } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
+  const locale = await getCookieLocale();
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   const userId = data?.claims?.sub;
@@ -24,6 +27,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Failed to export user data", error);
-    return new NextResponse("Не удалось подготовить экспорт данных.", { status: 500, headers: { "Content-Type": "text/plain; charset=utf-8" } });
+    return new NextResponse(tr(locale, "Не удалось подготовить экспорт данных.", "Could not prepare the data export."), { status: 500, headers: { "Content-Type": "text/plain; charset=utf-8" } });
   }
 }
