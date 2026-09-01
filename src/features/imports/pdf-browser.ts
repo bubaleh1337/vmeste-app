@@ -45,8 +45,23 @@ export async function extractPdfStatement(
   try {
     for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
       const page = await document.getPage(pageNumber);
-      const content = await page.getTextContent();
-      lines.push(...pageLines(content.items));
+      // PDF.js 6.x implements getTextContent() with `for await...of` over a
+      // ReadableStream. Stable Safari/iOS does not expose
+      // ReadableStream[Symbol.asyncIterator], which throws
+      // "undefined is not a function (near '...t of e...')".
+      // Consume the same stream through the reader API instead.
+      const reader = page.streamTextContent().getReader();
+      const items: unknown[] = [];
+      try {
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          if (value?.items) items.push(...value.items);
+        }
+      } finally {
+        reader.releaseLock();
+      }
+      lines.push(...pageLines(items));
       page.cleanup();
     }
   } finally {
