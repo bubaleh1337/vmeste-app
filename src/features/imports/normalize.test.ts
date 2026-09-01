@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { detectImportMapping, detectSavingsStatementCurrency, maskProbableFinancialNumbers, parseDelimitedText, parseImportAmount, parseImportDate, prepareRows } from "./normalize";
+import { detectImportMapping, detectSavingsStatementCurrency, detectStatementSource, maskProbableFinancialNumbers, parseDelimitedText, parseImportAmount, parseImportDate, prepareRows } from "./normalize";
 
 const baseMapping = {
   headerRow: 1,
@@ -10,6 +10,7 @@ const baseMapping = {
   debitColumn: -1,
   creditColumn: -1,
   typeColumn: -1,
+  externalIdColumn: -1,
   dateFormat: "dd.mm.yyyy" as const,
   decimalSeparator: "comma" as const,
   expenseSign: "negative" as const,
@@ -88,6 +89,34 @@ describe("import normalization", () => {
     expect(prepared[0].amountMinor).toBe("1606");
     expect(prepared[0].currencyCode).toBe("EUR");
     expect(prepared[1].amountMinor).toBe("23");
+  });
+
+  it("detects optional transaction IDs and bank/account scope without requiring a bank-specific format", () => {
+    const rows = [
+      ["Transaction date", "Description", "Amount", "Transaction ID"],
+      ["2026-09-01", "Transfer", "100.00", "ABC-12345"],
+      ["Bank: Freedom Bank", "IBAN: KZ123456789012345678"],
+    ];
+    const detected = detectImportMapping(rows, baseMapping, "savings");
+    const source = detectStatementSource(rows, "statement.pdf");
+    expect(detected.mapping.externalIdColumn).toBe(3);
+    expect(source.provider).toBe("freedom");
+    expect(source.accountHint).toBe("KZ123456789012345678");
+  });
+
+  it("prefers the statement issuer over another bank mentioned inside a transaction", () => {
+    const source = detectStatementSource([
+      ["АО Отбасы банк"],
+      ["Депозит: KZ269725132207F04BMH"],
+      ["Внесение денег принятые от АО Kaspi bank"],
+    ], "statement.pdf");
+    expect(source.provider).toBe("otbasy");
+    expect(source.accountHint).toBe("KZ269725132207F04BMH");
+  });
+
+  it("recognizes Kaspi source while keeping unknown banks on the generic path", () => {
+    expect(detectStatementSource([["Kaspi Gold statement"]], "kaspi.pdf").provider).toBe("kaspi");
+    expect(detectStatementSource([["Acme Credit Union statement"]], "statement.pdf").provider).toBeNull();
   });
 
   it("masks probable card or account numbers in preview", () => {

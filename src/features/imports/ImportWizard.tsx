@@ -12,6 +12,7 @@ import {
   cellText,
   detectImportMapping,
   detectSavingsStatementCurrency,
+  detectStatementSource,
   maskProbableFinancialNumbers,
   parseDelimitedText,
   prepareRows,
@@ -58,6 +59,7 @@ function defaultMapping(currentUserId: string, categoryId: string): ImportMappin
     debitColumn: 2,
     creditColumn: 3,
     typeColumn: -1,
+    externalIdColumn: -1,
     dateFormat: "auto",
     decimalSeparator: "auto",
     expenseSign: "negative",
@@ -79,9 +81,13 @@ function columnName(index: number): string {
   return result;
 }
 
-async function sha256(buffer: ArrayBuffer): Promise<string> {
+async function sha256(buffer: BufferSource): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", buffer);
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function sha256Text(value: string): Promise<string> {
+  return sha256(new TextEncoder().encode(value));
 }
 
 function formatImportDate(value: string | null, locale: AppLocale): string {
@@ -108,6 +114,8 @@ export function ImportWizard({ goalId, currencyCode, participants, currentUserId
   const [file, setFile] = useState<File | null>(null);
   const [fileType, setFileType] = useState<ImportFileType | null>(null);
   const [fileHash, setFileHash] = useState("");
+  const [sourceProvider, setSourceProvider] = useState<string | null>(null);
+  const [sourceAccountHash, setSourceAccountHash] = useState<string | null>(null);
   const [sheets, setSheets] = useState<ParsedSheet[]>([]);
   const [sheetIndex, setSheetIndex] = useState(0);
   const [mapping, setMapping] = useState<ImportMapping>(() => defaultMapping(currentUserId, categories[0]?.id ?? ""));
@@ -164,7 +172,15 @@ export function ImportWizard({ goalId, currencyCode, participants, currentUserId
     });
   }
 
-  async function prepareFromParsed(parsed: ParsedSheet[], hash: string, kind: ImportTargetKind, nextSheetIndex = 0, savingsCurrency = statementCurrency) {
+  async function prepareFromParsed(
+    parsed: ParsedSheet[],
+    hash: string,
+    kind: ImportTargetKind,
+    nextSheetIndex = 0,
+    savingsCurrency = statementCurrency,
+    nextSourceProvider = sourceProvider,
+    nextSourceAccountHash = sourceAccountHash,
+  ) {
     const rows = parsed[nextSheetIndex]?.rows ?? [];
     const base = defaultMapping(currentUserId, categories[0]?.id ?? "");
     const detection = detectImportMapping(rows, base, kind);
@@ -185,7 +201,10 @@ export function ImportWizard({ goalId, currencyCode, participants, currentUserId
       throw new Error(tr(locale, `В файле ${nonEmptyDataRows.length} строк. Текущий безопасный лимит — ${IMPORT_MAX_DATA_ROWS} строк за один импорт.`, `The file contains ${nonEmptyDataRows.length} rows. The current safe limit is ${IMPORT_MAX_DATA_ROWS} rows per import.`));
     }
 
-    let prepared = prepareRows(rows, kind, detection.mapping, kind === "savings" ? savingsCurrency : currencyCode);
+    let prepared = prepareRows(
+      rows, kind, detection.mapping, kind === "savings" ? savingsCurrency : currencyCode,
+      nextSourceProvider, nextSourceAccountHash,
+    );
     if (kind === "expenses") prepared = applyAutomaticCategories(prepared, kind);
     await checkPreview(prepared, hash, kind);
   }
@@ -197,6 +216,8 @@ export function ImportWizard({ goalId, currencyCode, participants, currentUserId
     setDuplicates(new Set());
     setRemovedRows(new Set());
     setFileAlreadyImported(false);
+    setSourceProvider(null);
+    setSourceAccountHash(null);
 
     if (nextFile.size > IMPORT_MAX_FILE_BYTES) {
       setError(tr(locale, "Файл больше 5 МБ. Выбери более компактную выписку.", "The file is larger than 5 MB. Choose a smaller statement."));
@@ -214,6 +235,8 @@ export function ImportWizard({ goalId, currencyCode, participants, currentUserId
       const hash = await sha256(buffer);
       let parsed: ParsedSheet[];
       let detectedCurrency = statementCurrency;
+      let detectedProvider: string | null = null;
+      let detectedAccountHash: string | null = null;
       if (extension === "csv") {
         const decoded = decodeCsv(buffer);
         parsed = [{ name: "CSV", rows: parseDelimitedText(decoded) }];
@@ -227,7 +250,15 @@ export function ImportWizard({ goalId, currencyCode, participants, currentUserId
         const pdf = await extractPdfStatement(buffer, kind, currencyCode);
         if (pdf.transactionCount === 0) throw new Error(tr(locale, "В PDF не удалось найти банковские операции. Возможно, формат выписки пока не поддерживается.", "No bank transactions were found in the PDF. This statement layout may not be supported yet."));
         detectedCurrency = pdf.currencyCode;
+        detectedProvider = pdf.sourceProvider ?? null;
+        detectedAccountHash = pdf.sourceAccountHint ? await sha256Text(pdf.sourceAccountHint) : null;
         parsed = [pdf.sheet];
+      }
+      if (!detectedProvider || !detectedAccountHash) {
+        const sourceRows = parsed.flatMap((sheet) => sheet.rows.slice(0, 80));
+        const source = detectStatementSource(sourceRows, nextFile.name);
+        detectedProvider ??= source.provider;
+        detectedAccountHash ??= source.accountHint ? await sha256Text(source.accountHint) : null;
       }
       if (!parsed.length || !parsed.some((sheet) => sheet.rows.length > 1)) throw new Error(tr(locale, "В файле нет строк для импорта.", "The file contains no rows to import."));
 
@@ -236,7 +267,9 @@ export function ImportWizard({ goalId, currencyCode, participants, currentUserId
       setFileHash(hash);
       setSheets(parsed);
       setStatementCurrency(detectedCurrency);
-      await prepareFromParsed(parsed, hash, kind, 0, detectedCurrency);
+      setSourceProvider(detectedProvider);
+      setSourceAccountHash(detectedAccountHash);
+      await prepareFromParsed(parsed, hash, kind, 0, detectedCurrency, detectedProvider, detectedAccountHash);
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : "";
       setError(message === "PDF_IMAGE_ONLY" ? tr(locale, "Этот PDF похож на скан или изображение без текстового слоя. Такой файл пока нельзя распознать автоматически.", "This PDF appears to be a scan/image without a text layer. It cannot be recognized automatically yet.") : message || tr(locale, "Не удалось прочитать файл.", "Could not read the file."));
@@ -279,7 +312,10 @@ export function ImportWizard({ goalId, currencyCode, participants, currentUserId
     setError("");
     setRemovedRows(new Set());
     try {
-      let rows = prepareRows(currentRows, targetKind, mapping, targetKind === "savings" ? statementCurrency : currencyCode);
+      let rows = prepareRows(
+        currentRows, targetKind, mapping, targetKind === "savings" ? statementCurrency : currencyCode,
+        sourceProvider, sourceAccountHash,
+      );
       if (targetKind === "expenses") rows = applyAutomaticCategories(rows, targetKind);
       setMappingConfident(true);
       await checkPreview(rows, fileHash, targetKind);
@@ -401,6 +437,7 @@ export function ImportWizard({ goalId, currencyCode, participants, currentUserId
           <div><span>{tr(locale, "Дубли", "Duplicates")}</span><strong>{duplicateCount}</strong></div>
           <div><span>{tr(locale, "Удалено", "Removed")}</span><strong>{removedCount}</strong></div>
         </div>
+        {duplicateCount > 0 && <p className="settings-note">{tr(locale, "Совпавшие операции уже есть в истории и не будут добавлены повторно. Если одинаковых операций несколько, приложение учитывает их количество.", "Matching transactions already exist in history and will not be added again. If several transactions are identical, their count is preserved.")}</p>}
 
         <div className="import-list" aria-label={tr(locale, "Предварительный просмотр импорта", "Import preview")}>
           {visibleRows.map((row) => {
@@ -414,7 +451,7 @@ export function ImportWizard({ goalId, currencyCode, participants, currentUserId
               </div>
               <div className="import-list-controls">
                 {targetKind === "expenses" ? <label>{tr(locale, "Категория", "Category")}<select value={row.categoryId ?? ""} disabled={duplicate || invalid} onChange={(event) => changeCategory(row.rowNumber, event.target.value)}>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label> : <label>{tr(locale, "Тип", "Type")}<select value={row.savingsType ?? "contribution"} disabled={duplicate || invalid} onChange={(event) => changeSavingsType(row.rowNumber, event.target.value as SavingsType)}>{Object.entries(savingsTypeLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>}
-                {duplicate ? <span className="import-row-status">{tr(locale, "Уже импортировано", "Already imported")}</span> : invalid ? <span className="import-row-status error-text">{errorLabel(row.errorCode ?? "", locale)}</span> : <button type="button" className="text-danger-button" onClick={() => removeRow(row.rowNumber)}>{tr(locale, "Удалить", "Remove")}</button>}
+                {duplicate ? <span className="import-row-status">{tr(locale, "Уже есть в истории", "Already in history")}</span> : invalid ? <span className="import-row-status error-text">{errorLabel(row.errorCode ?? "", locale)}</span> : <button type="button" className="text-danger-button" onClick={() => removeRow(row.rowNumber)}>{tr(locale, "Удалить", "Remove")}</button>}
               </div>
             </article>;
           })}
@@ -444,6 +481,7 @@ export function ImportWizard({ goalId, currencyCode, participants, currentUserId
           {mapping.amountMode === "signed" ? <label>{tr(locale, "Сумма", "Amount")}{columnSelect(mapping.amountColumn, (value) => updateMapping("amountColumn", value))}</label> : <><label>{tr(locale, "Дебет", "Debit")}{columnSelect(mapping.debitColumn, (value) => updateMapping("debitColumn", value))}</label><label>{tr(locale, "Кредит", "Credit")}{columnSelect(mapping.creditColumn, (value) => updateMapping("creditColumn", value))}</label></>}
           {targetKind === "expenses" && mapping.amountMode === "signed" && <label>{tr(locale, "Какой знак означает расход", "Which sign means expense")}<select value={mapping.expenseSign} onChange={(event) => updateMapping("expenseSign", event.target.value as ImportMapping["expenseSign"])}><option value="negative">{tr(locale, "Минус", "Minus")}</option><option value="positive">{tr(locale, "Плюс", "Plus")}</option></select></label>}
           {targetKind === "savings" && mapping.amountMode === "signed" && <label>{tr(locale, "Столбец типа", "Type column")}{columnSelect(mapping.typeColumn, (value) => updateMapping("typeColumn", value), true)}</label>}
+          <label>{tr(locale, "ID операции (если есть)", "Transaction ID (if available)")}{columnSelect(mapping.externalIdColumn, (value) => updateMapping("externalIdColumn", value), true)}</label>
           <label>{targetKind === "savings" ? tr(locale, "Чей вклад", "Whose contribution") : tr(locale, "Кто потратил", "Who spent")}<select value={mapping.participantUserId} onChange={(event) => updateMapping("participantUserId", event.target.value)}>{participants.map((person) => <option key={person.id} value={person.id}>{person.name}{person.id === currentUserId ? tr(locale, " (вы)", " (you)") : ""}</option>)}</select></label>
           <button type="button" className="secondary-button" onClick={() => void rebuildWithMapping()} disabled={busy}>{tr(locale, "Пересобрать список", "Rebuild list")}</button>
         </div>

@@ -21,6 +21,7 @@ export interface ImportMapping {
   debitColumn: number;
   creditColumn: number;
   typeColumn: number;
+  externalIdColumn: number;
   dateFormat: DateFormat;
   decimalSeparator: DecimalSeparator;
   expenseSign: ExpenseSign;
@@ -43,6 +44,9 @@ export interface PreparedImportRow {
   selected: boolean;
   errorCode: string | null;
   currencyCode: string;
+  sourceProvider: string | null;
+  sourceAccountHash: string | null;
+  externalTransactionId: string | null;
 }
 
 export interface PreviewResult {
