@@ -16,13 +16,14 @@ const rowSchema = z.object({
   analyticsStatus: z.enum(["included", "excluded", "needs_review"]),
   selected: z.boolean(),
   errorCode: z.string().max(120).nullable(),
+  currencyCode: z.enum(["KZT", "EUR", "USD", "RUB"]),
 });
 
 const requestSchema = z.object({
   goalId: z.uuid(),
   targetKind: z.enum(["savings", "expenses"]),
   fileName: z.string().trim().min(1).max(255),
-  fileType: z.enum(["csv", "xlsx"]),
+  fileType: z.enum(["csv", "xlsx", "pdf"]),
   fileHash: z.string().regex(/^[0-9a-f]{64}$/),
   mapping: z.record(z.string(), z.unknown()),
   rows: z.array(rowSchema).min(1).max(1000),

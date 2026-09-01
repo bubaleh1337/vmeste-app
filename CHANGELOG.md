@@ -1,5 +1,42 @@
 # Changelog
 
+## 0.8.4 — 2026-09-01
+
+- Fixed automatic decimal-separator handling for detected bank CSV/XLSX files.
+- Halyk EUR values such as `16.06` now remain `16.06 EUR` / `1606` minor units instead of being inflated 100x.
+- Automatic amount parsing now handles dot/comma decimal formats independently of a previous advanced import setting.
+- Added a regression assertion for the real-style Halyk EUR import path.
+- No SQL migration or dependency changes.
+
+## 0.8.3 — 2026-09-01
+
+- Fixed TypeScript compatibility with `pdfjs-dist 6.3.289`: removed the obsolete `isEvalSupported` option from `getDocument()`.
+- No import behavior, database schema, or dependencies changed.
+
+## 0.8.2 — 2026-09-01
+
+- Exclude the generated PDF.js worker from ESLint so release preflight checks only project source code.
+- Replace direct `window.location` language navigation with a native GET form while preserving a full reload after locale changes.
+- No database migration or dependency changes.
+
+
+## 0.8.1 — PDF/foreign-currency import fixes
+
+- Fixed PDF.js cleanup error (`document.destroy is not a function`) by destroying the loading task.
+- Added dedicated parsing for Halyk account statements and preserved the transaction amount separately from the running balance.
+- CSV/XLSX savings imports now auto-detect a single statement currency from `currency` / `валюта` columns.
+- Preview and saved rows keep the original EUR/USD/RUB/KZT amount; conversion is used only for goal analytics.
+- Money formatting now shows non-zero minor units for KZT and RUB as well, preventing bank-statement cents from being hidden.
+
+## 0.8.0 — PDF statement import
+
+- Added local text extraction for PDF bank statements using Mozilla PDF.js.
+- Added PDF to the same review/deduplication/atomic import flow as CSV/XLSX.
+- Validated the parser against an Otbasy Bank deposit statement layout and excluded the informational “current-year accrued interest” block from actual savings.
+- Added statement-currency selection/detection for savings imports (KZT/EUR/USD/RUB).
+- Added PDF as an expense source filter and updated privacy copy.
+- Image-only/scanned PDFs are rejected explicitly instead of being guessed.
+
 ## 0.7.0 — 2026-09-01
 
 - Добавлены мультивалютные накопления в KZT, EUR, USD и RUB внутри одной цели.

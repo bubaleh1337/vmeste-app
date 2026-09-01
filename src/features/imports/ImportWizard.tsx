@@ -11,6 +11,7 @@ import {
   IMPORT_MAX_FILE_BYTES,
   cellText,
   detectImportMapping,
+  detectSavingsStatementCurrency,
   maskProbableFinancialNumbers,
   parseDelimitedText,
   prepareRows,
@@ -102,6 +103,7 @@ export function ImportWizard({ goalId, currencyCode, participants, currentUserId
   const savingsTypeLabels = savingLabels(locale);
   const fileInputId = useId();
   const [targetKind, setTargetKind] = useState<ImportTargetKind>("expenses");
+  const [statementCurrency, setStatementCurrency] = useState<CurrencyCode>(currencyCode);
   const [file, setFile] = useState<File | null>(null);
   const [fileType, setFileType] = useState<ImportFileType | null>(null);
   const [fileHash, setFileHash] = useState("");
@@ -161,7 +163,7 @@ export function ImportWizard({ goalId, currencyCode, participants, currentUserId
     });
   }
 
-  async function prepareFromParsed(parsed: ParsedSheet[], hash: string, kind: ImportTargetKind, nextSheetIndex = 0) {
+  async function prepareFromParsed(parsed: ParsedSheet[], hash: string, kind: ImportTargetKind, nextSheetIndex = 0, savingsCurrency = statementCurrency) {
     const rows = parsed[nextSheetIndex]?.rows ?? [];
     const base = defaultMapping(currentUserId, categories[0]?.id ?? "");
     const detection = detectImportMapping(rows, base, kind);
@@ -182,7 +184,7 @@ export function ImportWizard({ goalId, currencyCode, participants, currentUserId
       throw new Error(tr(locale, `В файле ${nonEmptyDataRows.length} строк. Текущий безопасный лимит — ${IMPORT_MAX_DATA_ROWS} строк за один импорт.`, `The file contains ${nonEmptyDataRows.length} rows. The current safe limit is ${IMPORT_MAX_DATA_ROWS} rows per import.`));
     }
 
-    let prepared = prepareRows(rows, kind, detection.mapping);
+    let prepared = prepareRows(rows, kind, detection.mapping, kind === "savings" ? savingsCurrency : currencyCode);
     if (kind === "expenses") prepared = applyAutomaticCategories(prepared, kind);
     await checkPreview(prepared, hash, kind);
   }
@@ -200,8 +202,8 @@ export function ImportWizard({ goalId, currencyCode, participants, currentUserId
       return;
     }
     const extension = nextFile.name.split(".").pop()?.toLowerCase();
-    if (extension !== "csv" && extension !== "xlsx") {
-      setError(tr(locale, "Поддерживаются только файлы .csv и .xlsx.", "Only .csv and .xlsx files are supported."));
+    if (extension !== "csv" && extension !== "xlsx" && extension !== "pdf") {
+      setError(tr(locale, "Поддерживаются файлы .pdf, .csv и .xlsx.", "PDF, CSV and XLSX files are supported."));
       return;
     }
 
@@ -210,22 +212,33 @@ export function ImportWizard({ goalId, currencyCode, participants, currentUserId
       const buffer = await nextFile.arrayBuffer();
       const hash = await sha256(buffer);
       let parsed: ParsedSheet[];
+      let detectedCurrency = statementCurrency;
       if (extension === "csv") {
         const decoded = decodeCsv(buffer);
         parsed = [{ name: "CSV", rows: parseDelimitedText(decoded) }];
-      } else {
+        if (kind === "savings") detectedCurrency = detectSavingsStatementCurrency(parsed[0]?.rows ?? [], statementCurrency);
+      } else if (extension === "xlsx") {
         const workbook = await readExcelFile(buffer);
         parsed = workbook.map((sheet) => ({ name: sheet.sheet, rows: sheet.data }));
+        if (kind === "savings") detectedCurrency = detectSavingsStatementCurrency(parsed[0]?.rows ?? [], statementCurrency);
+      } else {
+        const { extractPdfStatement } = await import("./pdf-browser");
+        const pdf = await extractPdfStatement(buffer, kind, currencyCode);
+        if (pdf.transactionCount === 0) throw new Error(tr(locale, "В PDF не удалось найти банковские операции. Возможно, формат выписки пока не поддерживается.", "No bank transactions were found in the PDF. This statement layout may not be supported yet."));
+        detectedCurrency = pdf.currencyCode;
+        parsed = [pdf.sheet];
       }
-      if (!parsed.length || !parsed.some((sheet) => sheet.rows.length)) throw new Error(tr(locale, "В файле нет строк для импорта.", "The file contains no rows to import."));
+      if (!parsed.length || !parsed.some((sheet) => sheet.rows.length > 1)) throw new Error(tr(locale, "В файле нет строк для импорта.", "The file contains no rows to import."));
 
       setFile(nextFile);
       setFileType(extension);
       setFileHash(hash);
       setSheets(parsed);
-      await prepareFromParsed(parsed, hash, kind, 0);
+      setStatementCurrency(detectedCurrency);
+      await prepareFromParsed(parsed, hash, kind, 0, detectedCurrency);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : tr(locale, "Не удалось прочитать файл.", "Could not read the file."));
+      const message = caught instanceof Error ? caught.message : "";
+      setError(message === "PDF_IMAGE_ONLY" ? tr(locale, "Этот PDF похож на скан или изображение без текстового слоя. Такой файл пока нельзя распознать автоматически.", "This PDF appears to be a scan/image without a text layer. It cannot be recognized automatically yet.") : message || tr(locale, "Не удалось прочитать файл.", "Could not read the file."));
       setFile(null);
       setFileType(null);
       setSheets([]);
@@ -246,7 +259,11 @@ export function ImportWizard({ goalId, currencyCode, participants, currentUserId
     if (file && sheets.length && fileHash) {
       setBusy(true);
       try {
-        await prepareFromParsed(sheets, fileHash, kind, sheetIndex);
+        const detectedCurrency = kind === "savings"
+          ? detectSavingsStatementCurrency(sheets[sheetIndex]?.rows ?? [], statementCurrency)
+          : statementCurrency;
+        if (kind === "savings") setStatementCurrency(detectedCurrency);
+        await prepareFromParsed(sheets, fileHash, kind, sheetIndex, detectedCurrency);
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : tr(locale, "Не удалось подготовить список.", "Could not prepare the list."));
       } finally {
@@ -261,12 +278,26 @@ export function ImportWizard({ goalId, currencyCode, participants, currentUserId
     setError("");
     setRemovedRows(new Set());
     try {
-      let rows = prepareRows(currentRows, targetKind, mapping);
+      let rows = prepareRows(currentRows, targetKind, mapping, targetKind === "savings" ? statementCurrency : currencyCode);
       if (targetKind === "expenses") rows = applyAutomaticCategories(rows, targetKind);
       setMappingConfident(true);
       await checkPreview(rows, fileHash, targetKind);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : tr(locale, "Не удалось подготовить список.", "Could not prepare the list."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function changeStatementCurrency(nextCurrency: CurrencyCode) {
+    setStatementCurrency(nextCurrency);
+    if (!file || !fileHash || !sheets.length || targetKind !== "savings") return;
+    setBusy(true);
+    setError("");
+    try {
+      await prepareFromParsed(sheets, fileHash, targetKind, sheetIndex, nextCurrency);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : tr(locale, "Не удалось обновить валюту выписки.", "Could not update the statement currency."));
     } finally {
       setBusy(false);
     }
@@ -347,15 +378,16 @@ export function ImportWizard({ goalId, currencyCode, participants, currentUserId
         <div className="import-step-heading"><span>1</span><div><h2>{tr(locale, "Выбери выписку", "Choose a statement")}</h2><p>{tr(locale, "Файл читается только в браузере. Исходник не сохраняется.", "The file is read only in your browser. The original is not stored.")}</p></div></div>
         <div className="compact-form import-form simple-import-source">
           <label>{tr(locale, "Что импортируем", "What to import")}<select value={targetKind} onChange={(event) => void changeTargetKind(event.target.value as ImportTargetKind)}><option value="expenses">{tr(locale, "Расходы", "Expenses")}</option><option value="savings">{tr(locale, "Накопления", "Savings")}</option></select></label>
+          {targetKind === "savings" && <div className="field-with-help"><label>{tr(locale, "Валюта выписки", "Statement currency")}<select value={statementCurrency} onChange={(event) => void changeStatementCurrency(event.target.value as CurrencyCode)}><option value="KZT">KZT — {tr(locale, "Тенге", "Tenge")}</option><option value="EUR">EUR — {tr(locale, "Евро", "Euro")}</option><option value="USD">USD — {tr(locale, "Доллар США", "US dollar")}</option><option value="RUB">RUB — {tr(locale, "Российский рубль", "Russian ruble")}</option></select></label><small>{tr(locale, "Суммы сохраняются в валюте выписки без конвертации. Эквивалент в валюте цели считается отдельно.", "Amounts are stored in the statement currency without conversion. The goal-currency equivalent is calculated separately.")}</small></div>}
           <div className="file-picker-field">
-            <span className="file-picker-label">CSV / XLSX</span>
+            <span className="file-picker-label">PDF / CSV / XLSX</span>
             <div className="file-picker-control">
-              <input id={fileInputId} className="visually-hidden-file" type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={onFileChange} />
+              <input id={fileInputId} className="visually-hidden-file" type="file" accept=".pdf,.csv,.xlsx,application/pdf,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={onFileChange} />
               <label className="secondary-button file-picker-button" htmlFor={fileInputId}>{tr(locale, "Выбрать файл", "Choose file")}</label>
               <span className="file-picker-name">{file?.name ?? tr(locale, "Файл не выбран", "No file selected")}</span>
             </div>
           </div>
-          {file && <div className="wide import-file-meta"><strong>{file.name}</strong><span>{Math.ceil(file.size / 1024)} {tr(locale, "КБ · файл подготовлен к проверке", "KB · ready for review")}</span></div>}
+          {file && <div className="wide import-file-meta"><strong>{file.name}</strong><span>{Math.ceil(file.size / 1024)} {fileType === "pdf" ? tr(locale, "КБ · PDF распознан локально", "KB · PDF recognized locally") : tr(locale, "КБ · файл подготовлен к проверке", "KB · ready for review")}</span></div>}
         </div>
       </section>
 
@@ -377,7 +409,7 @@ export function ImportWizard({ goalId, currencyCode, participants, currentUserId
               <div className="import-list-main">
                 <div className="import-list-date">{formatImportDate(row.normalizedDate, locale)}</div>
                 <strong className="import-list-description">{maskProbableFinancialNumbers(row.description) || tr(locale, "Без описания", "No description")}</strong>
-                <div className="import-list-amount">{row.amountMinor ? formatMoney(BigInt(row.amountMinor), currencyCode, localeTag(locale)) : "—"}</div>
+                <div className="import-list-amount">{row.amountMinor ? formatMoney(BigInt(row.amountMinor), row.currencyCode as CurrencyCode, localeTag(locale)) : "—"}</div>
               </div>
               <div className="import-list-controls">
                 {targetKind === "expenses" ? <label>{tr(locale, "Категория", "Category")}<select value={row.categoryId ?? ""} disabled={duplicate || invalid} onChange={(event) => changeCategory(row.rowNumber, event.target.value)}>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label> : <label>{tr(locale, "Тип", "Type")}<select value={row.savingsType ?? "contribution"} disabled={duplicate || invalid} onChange={(event) => changeSavingsType(row.rowNumber, event.target.value as SavingsType)}>{Object.entries(savingsTypeLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>}

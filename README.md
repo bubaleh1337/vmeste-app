@@ -97,9 +97,9 @@ supabase/
 
 ## External services and credentials
 
-The repository never contains real Supabase or OAuth secrets. Development and production Supabase/Vercel projects are configured outside Git through environment variables. Google OAuth, CSV/XLSX import, Realtime and the public Vercel deployment are implemented. Apple OAuth and broader release/security review remain later milestones.
+The repository never contains real Supabase or OAuth secrets. Development and production Supabase/Vercel projects are configured outside Git through environment variables. Google OAuth, PDF/CSV/XLSX import, Realtime and the public Vercel deployment are implemented. Apple OAuth and broader release/security review remain later milestones.
 
-## Stage 3 — CSV/XLSX import
+## Stage 3 — PDF/CSV/XLSX import
 
 After applying the Stage 3 update, run migration `supabase/migrations/202608310004_import_commit.sql` in the Supabase SQL Editor, then run `npm install` because this stage adds `read-excel-file` for browser-side XLSX parsing.
 
@@ -108,7 +108,7 @@ Open a goal and choose **Импорт**. The flow is: file → mapping → previ
 
 ## Update 3.0.1
 
-- The import entry point is now a visible `Импортировать CSV/XLSX` button under the goal section navigation.
+- The import entry point is now a visible `Импортировать PDF/CSV/XLSX` button under the goal section navigation.
 - System expense category names are repaired with `202608310005_fix_category_names.sql`. The migration is ASCII-only to avoid Windows PowerShell 5.1 encoding corruption.
 - When copying any future UTF-8 SQL file from Windows PowerShell, use `Get-Content -Encoding UTF8 ... -Raw | Set-Clipboard`.
 
@@ -154,3 +154,8 @@ supabase/migrations/202609010002_multicurrency_savings.sql
 ```
 
 Apply it to both development and production Supabase projects before deploying the code.
+
+
+### PDF import
+
+Text-based PDF statements are extracted locally with Mozilla PDF.js. The original PDF is not persisted. Image-only/scanned PDFs are deliberately rejected until a privacy-preserving OCR path is added.

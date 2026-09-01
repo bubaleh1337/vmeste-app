@@ -56,7 +56,7 @@ export interface LiveExpense {
   spentByUserId: string;
   isDiscretionary: boolean;
   analyticsStatus: AnalyticsStatus;
-  source: "manual" | "csv" | "xlsx";
+  source: "manual" | "csv" | "xlsx" | "pdf";
   createdBy: string;
   createdAt?: string;
   deletedAt: string | null;
