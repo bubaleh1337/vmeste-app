@@ -576,3 +576,10 @@ Apple OAuth, домен, OAuth branding, production deployment, security review,
 - If the official rate is temporarily unavailable, foreign amounts must not be silently converted with guessed data; UI must disclose that the converted total is incomplete.
 - Negative-balance protection applies per original currency.
 - Expenses remain denominated in the goal currency in this stage; multi-currency expenses are out of scope.
+
+## Stage 5.0 — Accessibility and security hardening
+
+- Primary actions use each theme's dark accent token so white button text reaches WCAG AA contrast.
+- Keyboard focus is visible on buttons, links, form fields and disclosure summaries.
+- Public responses include baseline headers for HSTS, frame protection, base URI protection, MIME sniffing prevention and restrictive legacy cross-domain policies.
+- This stage does not change financial behavior, stored data or the Supabase schema.

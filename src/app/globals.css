@@ -22,9 +22,9 @@
 * { box-sizing: border-box; }
 html { background: var(--bg); color: var(--text); }
 body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--text); font-family: "Onest", "Manrope", "Segoe UI", system-ui, sans-serif; font-size: 16px; }
-button, input, select { font: inherit; }
+button, input, select, textarea { font: inherit; }
 button { color: inherit; }
-button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid rgba(111, 128, 106, 0.42); outline-offset: 2px; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible, summary:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; }
 button:not(:disabled) { cursor: pointer; }
 button:disabled { cursor: not-allowed; opacity: 0.5; }
 
@@ -75,8 +75,8 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .hero-meta strong { text-align: right; font-variant-numeric: tabular-nums; }
 .quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 16px 0 22px; }
 .primary-button, .secondary-button, .text-button { min-height: 46px; border-radius: 13px; border: 1px solid transparent; padding: 10px 14px; font-weight: 720; transition: transform .15s ease, background-color .15s ease; }
-.primary-button { background: var(--sage); color: white; }
-.primary-button:hover { background: var(--sage-dark); }
+.primary-button { background: var(--sage-dark); color: white; }
+.primary-button:hover { background: color-mix(in srgb, var(--sage-dark) 84%, black); }
 .secondary-button { background: var(--card); border-color: #cfc9bf; }
 .secondary-button:hover { background: #f2eee6; }
 .text-button { background: transparent; color: var(--sage-dark); }
@@ -740,7 +740,7 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .support-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 26px; }
 .support-link-card { display: grid; gap: 8px; min-height: 150px; padding: 20px; color: var(--text); text-decoration: none; transition: transform .16s ease, border-color .16s ease; }
 .support-link-card:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--sage) 46%, var(--line)); }
-.support-link-card:focus-visible { outline: 3px solid color-mix(in srgb, var(--sage) 45%, transparent); outline-offset: 3px; }
+.support-link-card:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; }
 .support-link-card strong { overflow-wrap: anywhere; font-size: 17px; }
 .support-link-card small { color: var(--muted); line-height: 1.45; }
 @media (max-width: 620px) { .support-links { grid-template-columns: 1fr; } }
