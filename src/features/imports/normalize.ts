@@ -10,6 +10,62 @@ import type {
 export const IMPORT_MAX_FILE_BYTES = 5 * 1024 * 1024;
 export const IMPORT_MAX_DATA_ROWS = 1000;
 
+export interface StatementSourceMetadata {
+  provider: string | null;
+  accountHint: string | null;
+}
+
+function normalizedProvider(text: string): string | null {
+  const value = text.toLocaleLowerCase("ru-RU").replace(/ё/g, "е");
+  const known: [RegExp, string][] = [
+    // Prefer explicit statement issuers before generic mentions that may occur
+    // inside transaction descriptions (for example an Otbasy transfer from Kaspi).
+    [/(?:отбасы|otbasy)/, "otbasy"],
+    [/(?:\bhalyk\b|народн(?:ый|ого) банк)/, "halyk"],
+    [/(?:freedom\s*bank|фридом\s*банк|bankffin)/, "freedom"],
+    [/(?:\bkaspi\b|каспи)/, "kaspi"],
+    [/(?:forte\s*bank|фортебанк|fortebank)/, "forte"],
+    [/(?:bank\s*centercredit|центркредит|\bbcc\b)/, "bcc"],
+    [/(?:bereke\s*bank|береке\s*банк)/, "bereke"],
+    [/(?:eurasian\s*bank|евразийск(?:ий|ого) банк)/, "eurasian"],
+    [/(?:home\s*credit\s*bank|хоум\s*кредит)/, "homecredit"],
+    [/(?:alatau\s*city\s*bank|jusan|жусан)/, "alataucity"],
+  ];
+  for (const [pattern, provider] of known) if (pattern.test(value)) return provider;
+
+  // Bank-agnostic fallback: a stable web domain in the statement is usually a
+  // better source scope than guessing a bank name from transaction text.
+  const domain = value.match(/https?:\/\/(?:www\.)?([a-z0-9.-]+\.[a-z]{2,})/i)?.[1];
+  return domain ? `domain:${domain}` : null;
+}
+
+function accountHintFromText(text: string): string | null {
+  const compact = text.replace(/[\u00a0\u202f]/g, " ");
+  const iban = compact.match(/\b([A-Z]{2}\d{2}[A-Z0-9]{10,30})\b/i)?.[1];
+  if (iban) return iban.toUpperCase();
+
+  const labelled = compact.match(/(?:iban|account\s*(?:number|no\.?|#)|номер\s+сч[её]та|сч[её]т|депозит|deposit)\s*[:№#-]\s*([A-Z0-9*][A-Z0-9* -]{6,34})/i)?.[1];
+  if (labelled) {
+    const normalized = labelled.replace(/\s+/g, "").replace(/-+$/g, "").toUpperCase();
+    if (normalized.length >= 7) return normalized;
+  }
+
+  const maskedCard = compact.match(/(?:\*{4}|X{4})[ -]?(\d{4})/i)?.[0];
+  return maskedCard ? maskedCard.replace(/\s+/g, "").toUpperCase() : null;
+}
+
+/**
+ * Detects only source metadata useful for duplicate protection. Raw account
+ * identifiers never need to leave the browser: the caller hashes accountHint
+ * before rows are sent to the server. Unknown banks remain generic instead of
+ * being rejected, so the importer is not tied to a fixed bank list.
+ */
+export function detectStatementSource(rows: unknown[][], fileName = ""): StatementSourceMetadata {
+  const sample = rows.slice(0, 80).flatMap((row) => row.slice(0, 20)).map(cellText).filter(Boolean);
+  const text = `${fileName}\n${sample.join("\n")}`;
+  return { provider: normalizedProvider(text), accountHint: accountHintFromText(text) };
+}
+
 const SUPPORTED_IMPORT_CURRENCIES = new Set<CurrencyCode>(["KZT", "EUR", "USD", "RUB"]);
 
 function importCurrency(value: unknown): CurrencyCode | null {
@@ -261,6 +317,8 @@ export function prepareRows(
   targetKind: ImportTargetKind,
   mapping: ImportMapping,
   currencyCode = "KZT",
+  sourceProvider: string | null = null,
+  sourceAccountHash: string | null = null,
 ): PreparedImportRow[] {
   const start = Math.max(0, mapping.headerRow);
   const dataRows = rows
@@ -303,6 +361,10 @@ export function prepareRows(
     else if (targetKind === "savings" && !inferredType) errorCode = "invalid_savings_type";
     else if (targetKind === "savings" && (inferredType === "adjustment_plus" || inferredType === "adjustment_minus")) errorCode = "adjustment_note_required";
 
+    const externalTransactionId = mapping.externalIdColumn >= 0
+      ? cellText(row[mapping.externalIdColumn]).replace(/\s+/g, " ").trim().slice(0, 160) || null
+      : null;
+
     return {
       rowNumber,
       normalizedDate,
@@ -316,6 +378,9 @@ export function prepareRows(
       selected: errorCode === null,
       errorCode,
       currencyCode,
+      sourceProvider,
+      sourceAccountHash,
+      externalTransactionId,
     };
   });
 }
@@ -370,6 +435,11 @@ export function detectImportMapping(
   const debitColumn = findHeader(headers, [/дебет/, /^debit$/, /расход/]);
   const creditColumn = findHeader(headers, [/кредит/, /^credit$/, /приход/]);
   const typeColumn = findHeader(headers, [/^тип$/, /тип операции/, /^type$/, /вид операции/]);
+  const externalIdColumn = findHeader(headers, [
+    /^transaction[ _-]?id$/, /^operation[ _-]?id$/, /^txn[ _-]?id$/, /^transaction reference$/,
+    /^reference(?: id| number| no\.?)?$/, /^bank reference$/, /^rrn$/, /^auth(?:orization)? code$/,
+    /^id операции$/, /^номер операции$/, /^№ операции$/, /^референс$/, /^номер документа$/, /^идентификатор операции$/,
+  ]);
   const hasDebitCredit = debitColumn >= 0 && creditColumn >= 0 && amountColumn < 0;
 
   const mapping: ImportMapping = {
@@ -382,6 +452,7 @@ export function detectImportMapping(
     debitColumn: debitColumn >= 0 ? debitColumn : base.debitColumn,
     creditColumn: creditColumn >= 0 ? creditColumn : base.creditColumn,
     typeColumn,
+    externalIdColumn,
     // Auto-detected bank files can use either 16.06 or 16,06 regardless of
     // the user's previous advanced-setting choice. The user can still
     // override this after detection when a particular export is ambiguous.

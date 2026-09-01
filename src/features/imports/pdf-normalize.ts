@@ -10,6 +10,8 @@ export interface PdfStatementParseResult {
   currencyCode: CurrencyCode;
   transactionCount: number;
   parser: "otbasy_deposit" | "halyk_account" | "generic";
+  sourceProvider?: string | null;
+  sourceAccountHint?: string | null;
 }
 
 function cleanLine(value: string): string {
@@ -85,6 +87,13 @@ function inferSavingsType(description: string, sign: string | undefined): Saving
   return "contribution";
 }
 
+function extractExternalTransactionId(text: string): string | null {
+  const match = text.match(
+    /(?:\b(?:transaction|operation|txn)\s*(?:id|no\.?|number)|\breference(?:\s*(?:id|no\.?|number))?|\brrn|id\s+операции|номер\s+операции|№\s*операции|референс|номер\s+документа)\s*[:#№-]?\s*([A-Z0-9][A-Z0-9/_-]{4,80})/i,
+  );
+  return match?.[1]?.trim() ?? null;
+}
+
 function parseHalykAccountRows(lines: readonly string[], currencyCode: CurrencyCode): unknown[][] {
   const transactions: unknown[][] = [];
   const signedAmount = /([+\-−–—])\s*((?:\d{1,3}(?:[\s\u00a0\u202f]\d{3})+|\d+)(?:[,.]\d{2}))/u;
@@ -108,6 +117,7 @@ function parseHalykAccountRows(lines: readonly string[], currencyCode: CurrencyC
       normalizedAmount(amountMatch[2], amountMatch[1]),
       inferSavingsType(description, amountMatch[1]),
       currencyCode,
+      extractExternalTransactionId(description),
     ]);
   }
   return transactions;
@@ -160,7 +170,7 @@ export function parsePdfStatementLines(
   if (isHalykAccountStatement(sourceLines)) {
     const transactions = parseHalykAccountRows(sourceLines, currencyCode);
     return {
-      sheet: { name: "PDF", rows: [["Дата", "Описание", "Сумма", "Тип", "Валюта"], ...transactions] },
+      sheet: { name: "PDF", rows: [["Дата", "Описание", "Сумма", "Тип", "Валюта", "ID операции"], ...transactions] },
       currencyCode,
       transactionCount: transactions.length,
       parser: "halyk_account",
@@ -223,22 +233,16 @@ export function parsePdfStatementLines(
 
     // The synthetic table is intentionally simple so it flows through the same
     // preview, duplicate detection and atomic commit pipeline as CSV/XLSX.
-    transactions.push([dateMatch[1], description, amount, type, rowCurrency]);
+    transactions.push([dateMatch[1], description, amount, type, rowCurrency, extractExternalTransactionId(description)]);
   }
 
-  const deduped: unknown[][] = [];
-  const seen = new Set<string>();
-  for (const row of transactions) {
-    const key = row.join("|");
-    if (seen.has(key)) continue;
-    seen.add(key);
-    deduped.push(row);
-  }
-
+  // Do not collapse identical-looking rows here. Two legitimate bank operations
+  // may have the same date, amount and description. The server-side duplicate
+  // reconciler preserves multiplicity across overlapping statements.
   return {
-    sheet: { name: "PDF", rows: [["Дата", "Описание", "Сумма", "Тип", "Валюта"], ...deduped] },
+    sheet: { name: "PDF", rows: [["Дата", "Описание", "Сумма", "Тип", "Валюта", "ID операции"], ...transactions] },
     currencyCode,
-    transactionCount: deduped.length,
+    transactionCount: transactions.length,
     parser: selected.parser,
   };
 }

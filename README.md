@@ -159,3 +159,15 @@ Apply it to both development and production Supabase projects before deploying t
 ### PDF import
 
 Text-based PDF statements are extracted locally with Mozilla PDF.js. The original PDF is not persisted. Image-only/scanned PDFs are deliberately rejected until a privacy-preserving OCR path is added.
+
+## Stage 4.8 — overlapping statement duplicate protection
+
+Before running 0.11.0 against an existing database, apply:
+
+```text
+supabase/migrations/202609010004_duplicate_protection.sql
+```
+
+Apply it to both development and production Supabase projects before deploying the code.
+
+Duplicate reconciliation is bank-agnostic. Exact file SHA-256 remains the first guard. When a statement exposes a transaction/reference ID it is used automatically; otherwise the importer reconciles date, amount, currency, debit/credit direction and normalized bank description while preserving the number of genuinely identical operations. If an account/IBAN/card scope can be detected, only its SHA-256 hash is sent to and stored by the backend. Unknown banks continue through the generic parser rather than being rejected by bank name.

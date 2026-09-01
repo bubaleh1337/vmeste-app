@@ -1,6 +1,7 @@
 import type { CurrencyCode } from "@/lib/money";
 import type { ImportTargetKind } from "./types";
 import { parsePdfStatementLines, type PdfStatementParseResult } from "./pdf-normalize";
+import { detectStatementSource } from "./normalize";
 
 type PdfTextItem = { str: string; transform: number[]; width?: number };
 
@@ -59,5 +60,7 @@ export async function extractPdfStatement(
   if (nonEmptyCharacters < 40) {
     throw new Error("PDF_IMAGE_ONLY");
   }
-  return parsePdfStatementLines(lines, targetKind, fallbackCurrency);
+  const parsed = parsePdfStatementLines(lines, targetKind, fallbackCurrency);
+  const source = detectStatementSource(lines.map((line) => [line]));
+  return { ...parsed, sourceProvider: source.provider, sourceAccountHint: source.accountHint };
 }

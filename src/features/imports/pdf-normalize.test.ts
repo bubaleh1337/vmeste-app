@@ -19,8 +19,8 @@ describe("PDF statement normalization", () => {
     expect(result.currencyCode).toBe("KZT");
     expect(result.parser).toBe("otbasy_deposit");
     expect(result.transactionCount).toBe(3);
-    expect(result.sheet.rows[1]).toEqual(["30.04.2024", "Внесение денег на сберегательный счет по депозиту принятые от АО Kaspi bank", "+100000.00", "contribution", "KZT"]);
-    expect(result.sheet.rows[2]).toEqual(["31.12.2024", "Выплата вознаграждения по депозиту", "+6073.33", "interest", "KZT"]);
+    expect(result.sheet.rows[1]).toEqual(["30.04.2024", "Внесение денег на сберегательный счет по депозиту принятые от АО Kaspi bank", "+100000.00", "contribution", "KZT", null]);
+    expect(result.sheet.rows[2]).toEqual(["31.12.2024", "Выплата вознаграждения по депозиту", "+6073.33", "interest", "KZT", null]);
   });
 
   it("detects euro statement currency", () => {
@@ -48,8 +48,25 @@ describe("PDF statement normalization", () => {
     expect(result.parser).toBe("halyk_account");
     expect(result.currencyCode).toBe("EUR");
     expect(result.transactionCount).toBe(3);
-    expect(result.sheet.rows[2]).toEqual(["01.08.2025", "Дополнительный взнос", "+16.06", "contribution", "EUR"]);
-    expect(result.sheet.rows[3]).toEqual(["02.09.2025", "Выплата вознаграждения", "+0.23", "interest", "EUR"]);
+    expect(result.sheet.rows[2]).toEqual(["01.08.2025", "Дополнительный взнос", "+16.06", "contribution", "EUR", null]);
+    expect(result.sheet.rows[3]).toEqual(["02.09.2025", "Выплата вознаграждения", "+0.23", "interest", "EUR", null]);
+  });
+
+  it("extracts a transaction reference from a generic PDF when the bank exposes one", () => {
+    const result = parsePdfStatementLines([
+      "Date Operation Description",
+      "31.08.2026 + 10 000,00 KZT Transfer RRN: 123456789012",
+    ], "savings", "KZT");
+    expect(result.sheet.rows[1]?.[5]).toBe("123456789012");
+  });
+
+  it("preserves two genuinely identical bank operations in the same PDF", () => {
+    const result = parsePdfStatementLines([
+      "Date Operation Description",
+      "31.08.2026 + 10 000,00 KZT Transfer",
+      "31.08.2026 + 10 000,00 KZT Transfer",
+    ], "savings", "KZT");
+    expect(result.transactionCount).toBe(2);
   });
 
   it("keeps explicit negative amounts for expense sign detection", () => {

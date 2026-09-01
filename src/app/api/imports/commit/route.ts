@@ -17,6 +17,9 @@ const rowSchema = z.object({
   selected: z.boolean(),
   errorCode: z.string().max(120).nullable(),
   currencyCode: z.enum(["KZT", "EUR", "USD", "RUB"]),
+  sourceProvider: z.string().trim().max(120).nullable(),
+  sourceAccountHash: z.string().regex(/^[0-9a-f]{64}$/).nullable(),
+  externalTransactionId: z.string().trim().max(160).nullable(),
 });
 
 const requestSchema = z.object({
