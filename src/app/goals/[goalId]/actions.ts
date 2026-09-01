@@ -40,6 +40,10 @@ function fail(goalId: string, code: string): never {
   redirect(`/goals/${goalId}?error=${encodeURIComponent(code)}`);
 }
 
+export interface ManualEntryState {
+  successCount: number;
+}
+
 export async function updateGoalAction(goalId: string, formData: FormData) {
   if (!uuid.safeParse(goalId).success) fail(goalId, "invalid_goal");
   const parsed = z.object({
@@ -66,7 +70,7 @@ export async function updateGoalAction(goalId: string, formData: FormData) {
   revalidatePath(`/goals/${goalId}`);
 }
 
-export async function addSavingAction(goalId: string, formData: FormData) {
+export async function addSavingAction(goalId: string, previousState: ManualEntryState, formData: FormData): Promise<ManualEntryState> {
   if (!uuid.safeParse(goalId).success) fail(goalId, "invalid_goal");
   const parsed = z.object({
     type: savingType,
@@ -102,6 +106,7 @@ export async function addSavingAction(goalId: string, formData: FormData) {
   });
   if (error) fail(goalId, "saving_failed");
   revalidatePath(`/goals/${goalId}`);
+  return { successCount: previousState.successCount + 1 };
 }
 
 export async function updateSavingAction(goalId: string, savingId: string, formData: FormData) {
@@ -155,7 +160,7 @@ export async function restoreSavingAction(goalId: string, savingId: string) {
   revalidatePath(`/goals/${goalId}`);
 }
 
-export async function addExpenseAction(goalId: string, formData: FormData) {
+export async function addExpenseAction(goalId: string, previousState: ManualEntryState, formData: FormData): Promise<ManualEntryState> {
   if (!uuid.safeParse(goalId).success) fail(goalId, "invalid_goal");
   const parsed = z.object({
     amount: z.string().trim().min(1), transactionDate: date, description: z.string().trim().min(1).max(300),
@@ -209,6 +214,7 @@ export async function addExpenseAction(goalId: string, formData: FormData) {
   }
 
   revalidatePath(`/goals/${goalId}`);
+  return { successCount: previousState.successCount + 1 };
 }
 
 export async function updateExpenseAction(goalId: string, expenseId: string, formData: FormData) {

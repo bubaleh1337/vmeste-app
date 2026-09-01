@@ -284,6 +284,10 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .compact-form label { display: grid; gap: 6px; font-size: 13px; font-weight: 700; }
 .compact-form input:not([type="checkbox"]), .compact-form select { min-height: 42px; width: 100%; border: 1px solid #cfc9bf; border-radius: 10px; background: var(--surface-input); padding: 8px 10px; color: var(--text); }
 .compact-form .checkbox-label { font-weight: 400; }
+.manual-entry-result { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.manual-entry-result .primary-button { flex: 0 0 auto; }
+.manual-entry-success-button { background: var(--sage-dark); }
+.manual-entry-success { margin: 0; color: var(--text); font-size: 13px; font-weight: 700; line-height: 1.4; }
 
 .simple-list { display: grid; margin-top: 14px; }
 .simple-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 16px; align-items: start; padding: 14px 0; border-bottom: 1px solid var(--line-soft); }
