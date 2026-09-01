@@ -392,7 +392,7 @@ export type InvitationState = { url: string | null; error: string | null };
 export async function createInvitationAction(goalId: string, previous: InvitationState, formData: FormData): Promise<InvitationState> {
   void previous;
   void formData;
-  if (!uuid.safeParse(goalId).success) return { url: null, error: "Некорректная цель." };
+  if (!uuid.safeParse(goalId).success) return { url: null, error: "invalid_goal" };
   const { supabase } = await authenticated();
   const token = randomBytes(32).toString("base64url");
   const tokenHash = createHash("sha256").update(token).digest("hex");
@@ -401,7 +401,7 @@ export async function createInvitationAction(goalId: string, previous: Invitatio
     p_token_hash: tokenHash,
     p_intended_email: null,
   });
-  if (error) return { url: null, error: "Не удалось создать ссылку. Создавать приглашения может только владелец активной цели." };
+  if (error) return { url: null, error: "invite_create_failed" };
   revalidatePath(`/goals/${goalId}`);
   const appUrl = await getAppUrl();
   return { url: `${appUrl.replace(/\/$/, "")}/invite/${token}`, error: null };

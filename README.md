@@ -95,9 +95,9 @@ supabase/
   tests/database/          # pgTAP/RLS tests
 ```
 
-## Not connected yet
+## External services and credentials
 
-This repository does **not** contain real Supabase credentials and does not create a cloud project automatically. Apple OAuth, CSV/XLSX import, hosting and public release remain later milestones.
+The repository never contains real Supabase or OAuth secrets. Development and production Supabase/Vercel projects are configured outside Git through environment variables. Google OAuth, CSV/XLSX import, Realtime and the public Vercel deployment are implemented. Apple OAuth and broader release/security review remain later milestones.
 
 ## Stage 3 — CSV/XLSX import
 
@@ -135,3 +135,10 @@ Closed beta remains `noindex` by default. Invitation URLs derive the active requ
 После первого стабильного интернет-релиза проект ведётся через Git. Инструкции: `docs/GIT_RELEASE.md`. Roadmap: `docs/ROADMAP.md`.
 
 Контакты поддержки в приложении: Telegram `@kemisayega`, email `ekaterina.pyshkova@gmail.com`.
+
+
+## Stage 4.3 — language and appearance preferences
+
+Version `0.6.0` adds full RU/EN user-interface switching, six visual themes, three typography presets and prominent developer/support contacts on the landing page and profile. Apply `supabase/migrations/202609010001_profile_preferences.sql` to every existing Supabase environment before deploying this code. The migration only adds `theme_key` and `font_key` profile preferences; it does not modify financial rows.
+
+The first supported goal currencies are KZT, EUR, USD and RUB. Stage 4.3 still uses one currency per goal. Cross-currency savings conversion is intentionally deferred to a separate financial migration and must not be simulated with floating-point arithmetic.

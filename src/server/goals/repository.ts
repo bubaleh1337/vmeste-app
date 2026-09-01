@@ -11,6 +11,7 @@ import type {
 import type { CurrencyCode, SavingsType } from "@/lib/money";
 import type { AnalyticsStatus } from "@/features/demo/types";
 import { mergeCategorySettings, type ExpenseCategoryOverrideRow, type ExpenseCategoryRow, type ExpenseCategorySetting } from "@/features/expenses/category-settings";
+import { normalizeFont, normalizeLocale, normalizeTheme } from "@/lib/i18n";
 
 type GoalReadRow = {
   id: string;
@@ -29,7 +30,7 @@ type MembershipRow = {
   status: "active" | "removed";
 };
 
-type ProfileRow = { id: string; display_name: string | null; avatar_url: string | null; timezone: string };
+type ProfileRow = { id: string; display_name: string | null; avatar_url: string | null; timezone: string; locale?: string; theme_key?: string; font_key?: string };
 
 type SavingsReadRow = {
   id: string;
@@ -73,11 +74,11 @@ function currency(value: string): CurrencyCode {
 
 export async function getCurrentProfile(userId: string): Promise<LiveProfile | null> {
   const supabase = await createClient();
-  const { data, error } = await supabase.from("profiles").select("id, display_name, avatar_url, timezone").eq("id", userId).maybeSingle();
+  const { data, error } = await supabase.from("profiles").select("id, display_name, avatar_url, timezone, locale, theme_key, font_key").eq("id", userId).is("deleted_at", null).maybeSingle();
   if (error) throw error;
   if (!data) return null;
   const row = data as ProfileRow;
-  return { id: row.id, displayName: row.display_name, avatarUrl: row.avatar_url, timeZone: row.timezone };
+  return { id: row.id, displayName: row.display_name, avatarUrl: row.avatar_url, timeZone: row.timezone, locale: normalizeLocale(row.locale), theme: normalizeTheme(row.theme_key), font: normalizeFont(row.font_key) };
 }
 
 export async function listGoals(userId: string): Promise<LiveGoalSummary[]> {
@@ -129,7 +130,7 @@ export async function getGoalSnapshot(goalId: string, userId: string): Promise<L
 
   const profileIds = memberships.map((row) => row.user_id);
   const profileResult = profileIds.length
-    ? await supabase.from("profiles").select("id, display_name, avatar_url, timezone").in("id", profileIds)
+    ? await supabase.from("profiles").select("id, display_name, avatar_url, timezone, locale, theme_key, font_key").in("id", profileIds)
     : { data: [], error: null };
   if (profileResult.error) throw profileResult.error;
   const profiles = new Map(((profileResult.data ?? []) as ProfileRow[]).map((row) => [row.id, row]));

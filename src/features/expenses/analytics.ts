@@ -74,10 +74,14 @@ export function previousMonthKey(monthKey: string): string {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
-export function monthLabelRu(monthKey: string): string {
+export function monthLabel(monthKey: string, locale = "ru-RU"): string {
   const [year, month] = monthKey.split("-").map(Number);
-  return new Intl.DateTimeFormat("ru-RU", { month: "long", year: "numeric", timeZone: "UTC" })
+  return new Intl.DateTimeFormat(locale, { month: "long", year: "numeric", timeZone: "UTC" })
     .format(new Date(Date.UTC(year, month - 1, 1)));
+}
+
+export function monthLabelRu(monthKey: string): string {
+  return monthLabel(monthKey, "ru-RU");
 }
 
 export function percentOf(part: bigint, total: bigint): number {

@@ -1,11 +1,15 @@
 import type { AnalyticsStatus } from "@/features/demo/types";
 import type { CurrencyCode, SavingsType } from "@/lib/money";
+import type { AppLocale, FontKey, ThemeKey } from "@/lib/i18n";
 
 export interface LiveProfile {
   id: string;
   displayName: string | null;
   avatarUrl: string | null;
   timeZone: string;
+  locale: AppLocale;
+  theme: ThemeKey;
+  font: FontKey;
 }
 
 export interface LiveGoalSummary {

@@ -30,6 +30,8 @@ create table public.profiles (
   avatar_url text,
   locale text not null default 'ru-KZ',
   timezone text not null default 'Asia/Atyrau',
+  theme_key text not null default 'sage' check (theme_key in ('sage','rose','lavender','ocean','sky','honey')),
+  font_key text not null default 'onest' check (font_key in ('onest','manrope','system')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   deleted_at timestamptz

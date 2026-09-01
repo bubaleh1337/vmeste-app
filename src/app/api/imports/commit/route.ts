@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { getCookieLocale } from "@/lib/i18n/server";
+import { tr } from "@/lib/i18n";
 
 const rowSchema = z.object({
   rowNumber: z.number().int().positive(),
@@ -27,12 +29,13 @@ const requestSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const locale = await getCookieLocale();
   const parsed = requestSchema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) return NextResponse.json({ error: "Некорректные данные импорта." }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: tr(locale, "Некорректные данные импорта.", "Invalid import data.") }, { status: 400 });
 
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
-  if (!claims?.claims?.sub) return NextResponse.json({ error: "Требуется вход." }, { status: 401 });
+  if (!claims?.claims?.sub) return NextResponse.json({ error: tr(locale, "Требуется вход.", "Sign-in required.") }, { status: 401 });
 
   const { data, error } = await supabase.rpc("commit_financial_import", {
     p_goal_id: parsed.data.goalId,
@@ -47,7 +50,7 @@ export async function POST(request: Request) {
     if (process.env.NODE_ENV === "development") console.error("[Import commit]", error.code, error.message);
     const duplicateFile = error.message.includes("file_already_imported");
     return NextResponse.json({
-      error: duplicateFile ? "Этот файл уже был импортирован. Повторная загрузка заблокирована." : "Импорт отклонён. Ни одна финансовая операция не была записана.",
+      error: duplicateFile ? tr(locale, "Этот файл уже был импортирован. Повторная загрузка заблокирована.", "This file has already been imported. Duplicate upload is blocked.") : tr(locale, "Импорт отклонён. Ни одна финансовая операция не была записана.", "Import was rejected. No financial transaction was written."),
     }, { status: 400 });
   }
   return NextResponse.json(data);
