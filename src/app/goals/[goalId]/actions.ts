@@ -12,6 +12,7 @@ import { createClient } from "@/lib/supabase/server";
 const uuid = z.uuid();
 const date = z.iso.date();
 const savingType = z.enum(["contribution", "interest", "withdrawal", "fee", "adjustment_plus", "adjustment_minus"]);
+const savingsCurrency = z.enum(["KZT", "EUR", "USD", "RUB"]);
 const categoryIcon = z.enum([
   "shopping-basket", "utensils", "car", "house", "heart-pulse", "sparkles", "shirt", "wifi",
   "ticket", "book-open", "plane", "paw-print", "gift", "receipt-text", "arrow-left-right", "banknote",
@@ -72,11 +73,12 @@ export async function addSavingAction(goalId: string, formData: FormData) {
     amount: z.string().trim().min(1),
     transactionDate: date,
     contributorUserId: uuid,
+    currencyCode: savingsCurrency,
     description: z.string().trim().max(160),
     note: z.string().trim().max(500).optional(),
   }).safeParse({
     type: formData.get("type"), amount: formData.get("amount"), transactionDate: formData.get("transactionDate"),
-    contributorUserId: formData.get("contributorUserId"), description: formData.get("description"), note: formData.get("note") || undefined,
+    contributorUserId: formData.get("contributorUserId"), currencyCode: formData.get("currencyCode"), description: formData.get("description"), note: formData.get("note") || undefined,
   });
   if (!parsed.success) fail(goalId, "invalid_saving");
   const amountMinor = parseMajorUnits(parsed.data.amount);
@@ -84,13 +86,11 @@ export async function addSavingAction(goalId: string, formData: FormData) {
   if ((parsed.data.type === "adjustment_plus" || parsed.data.type === "adjustment_minus") && !parsed.data.note) fail(goalId, "adjustment_note_required");
 
   const { supabase, userId } = await authenticated();
-  let currency: string;
-  try { currency = await goalCurrency(goalId); } catch { fail(goalId, "goal_unavailable"); }
   const { error } = await supabase.from("savings_transactions").insert({
     goal_id: goalId,
     type: parsed.data.type as SavingsType,
     amount_minor: amountMinor.toString(),
-    currency_code: currency!,
+    currency_code: parsed.data.currencyCode,
     transaction_date: parsed.data.transactionDate,
     contributor_user_id: parsed.data.contributorUserId,
     description: parsed.data.description,

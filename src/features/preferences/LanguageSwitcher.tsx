@@ -15,7 +15,7 @@ export function LanguageSwitcher({ locale }: { locale: AppLocale }) {
     <button
       className="language-switch"
       type="button"
-      onClick={() => window.location.assign(href)}
+      onClick={() => window.location.href = href}
       aria-label={locale === "ru" ? "Switch to English" : "Переключить на русский"}
     >
       {locale === "ru" ? "EN" : "RU"}

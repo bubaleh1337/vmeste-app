@@ -5,7 +5,7 @@ import { LanguageSwitcher } from "@/features/preferences/LanguageSwitcher";
 import { PreferenceSync } from "@/features/preferences/PreferenceSync";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/server/goals/repository";
-import { APP_NAME, SUPPORT_EMAIL, SUPPORT_TELEGRAM_LABEL, SUPPORT_TELEGRAM_URL } from "@/lib/config";
+import { SUPPORT_EMAIL, SUPPORT_TELEGRAM_LABEL, SUPPORT_TELEGRAM_URL } from "@/lib/config";
 import { tr } from "@/lib/i18n";
 import { resolveAuthenticatedLocale } from "@/lib/i18n/server";
 

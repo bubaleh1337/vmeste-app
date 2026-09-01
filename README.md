@@ -142,3 +142,15 @@ Closed beta remains `noindex` by default. Invitation URLs derive the active requ
 Version `0.6.0` adds full RU/EN user-interface switching, six visual themes, three typography presets and prominent developer/support contacts on the landing page and profile. Apply `supabase/migrations/202609010001_profile_preferences.sql` to every existing Supabase environment before deploying this code. The migration only adds `theme_key` and `font_key` profile preferences; it does not modify financial rows.
 
 The first supported goal currencies are KZT, EUR, USD and RUB. Stage 4.3 still uses one currency per goal. Cross-currency savings conversion is intentionally deferred to a separate financial migration and must not be simulated with floating-point arithmetic.
+
+## Multi-currency savings (0.7.0)
+
+Savings transactions may be stored in `KZT`, `EUR`, `USD`, or `RUB` while a goal keeps one reporting currency. The app fetches official National Bank of Kazakhstan daily rates from the documented HTTPS XML service and derives non-KZT cross-rates through KZT. Original transaction amounts are never rewritten when FX rates change.
+
+Before running 0.7.0 against an existing database, apply:
+
+```text
+supabase/migrations/202609010002_multicurrency_savings.sql
+```
+
+Apply it to both development and production Supabase projects before deploying the code.

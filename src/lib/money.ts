@@ -119,7 +119,7 @@ export function formatMoney(amountMinor: bigint, currency: CurrencyCode = "KZT",
   const whole = absolute / 100n;
   const fraction = absolute % 100n;
   const grouped = whole.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-  const suffix = currency === "KZT" ? "₸" : currency === "RUB" ? "₽" : currency;
+  const suffix = currency === "KZT" ? "₸" : currency === "RUB" ? "₽" : currency === "EUR" ? "€" : "$";
   const decimal = locale.toLowerCase().startsWith("en") ? "." : ",";
   const fractionPart = currency === "KZT" || currency === "RUB" || fraction === 0n ? "" : `${decimal}${fraction.toString().padStart(2, "0")}`;
   return `${negative ? "−" : ""}${grouped}${fractionPart} ${suffix}`;
