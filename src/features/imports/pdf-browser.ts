@@ -50,10 +50,19 @@ export async function extractPdfStatement(
       page.cleanup();
     }
   } finally {
-    // PDF.js owns the document through the loading task. Destroying the task is
-    // supported across the browser/legacy builds we use, while some builds do
-    // not expose document.destroy() on the proxy object.
-    await loadingTask.destroy();
+    // PDF.js builds are not perfectly uniform inside Safari/WKWebView. Some
+    // expose destroy() on the loading task, some only on the document proxy.
+    // Cleanup is best-effort and must never turn a successfully parsed statement
+    // into an import error on mobile.
+    const taskDestroy = (loadingTask as unknown as { destroy?: () => Promise<void> | void }).destroy;
+    const documentDestroy = (document as unknown as { destroy?: () => Promise<void> | void }).destroy;
+    try {
+      if (typeof taskDestroy === "function") await taskDestroy.call(loadingTask);
+      else if (typeof documentDestroy === "function") await documentDestroy.call(document);
+    } catch {
+      // Parsing already succeeded. A PDF.js cleanup incompatibility is not a
+      // reason to discard the preview; browser GC will reclaim the document.
+    }
   }
 
   const nonEmptyCharacters = lines.join("").replace(/\s/g, "").length;

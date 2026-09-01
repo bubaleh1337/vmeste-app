@@ -35,10 +35,18 @@ export function detectStatementCurrency(lines: readonly string[], fallback: Curr
   if (normalized) return normalized;
 
   const counts = new Map<CurrencyCode, number>([["KZT", 0], ["EUR", 0], ["USD", 0], ["RUB", 0]]);
+  // Avoid String.prototype.matchAll here. Some in-app iOS/WKWebView builds
+  // still expose an older JavaScript runtime even when the main Safari app is
+  // recent. RegExp.exec with a global regexp is equivalent for our use and is
+  // supported much further back.
+  const currencyToken = /₸|₽|€|\$|\bKZT\b|\bEUR\b|\bUSD\b|\bRUB\b/giu;
   for (const line of lines) {
-    for (const symbol of line.matchAll(/₸|₽|€|\$|\bKZT\b|\bEUR\b|\bUSD\b|\bRUB\b/giu)) {
+    currencyToken.lastIndex = 0;
+    let symbol: RegExpExecArray | null;
+    while ((symbol = currencyToken.exec(line)) !== null) {
       const code = normalizeCurrency(symbol[0]);
       if (code) counts.set(code, (counts.get(code) ?? 0) + 1);
+      if (symbol[0].length === 0) currencyToken.lastIndex += 1;
     }
   }
   let best = fallback;
@@ -94,31 +102,135 @@ function extractExternalTransactionId(text: string): string | null {
   return match?.[1]?.trim() ?? null;
 }
 
-function parseHalykAccountRows(lines: readonly string[], currencyCode: CurrencyCode): unknown[][] {
+function moneyToken(value: string): string | null {
+  const match = cleanLine(value).match(/^([+\-−–—])?\s*((?:\d{1,3}(?:[\s\u00a0\u202f]\d{3})+|\d+)(?:[,.]\d{2}))$/u);
+  return match ? normalizedAmount(match[2], match[1]) : null;
+}
+
+function nonZeroAmount(value: string | null): boolean {
+  if (!value) return false;
+  const normalized = value.replace(/^\+/, "");
+  return normalized !== "0.00" && normalized !== "-0.00";
+}
+
+function appendDescriptionContinuation(description: string, continuation: readonly string[]): string {
+  const useful = continuation
+    .map(cleanLine)
+    .filter((line) => /[A-Za-zА-Яа-яЁё]/.test(line))
+    .filter((line) => !isNoiseLine(line))
+    .filter((line) => !/^место печати банка$/i.test(line));
+  return [description, ...useful].join(" ").replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Halyk currently emits at least two materially different account statement
+ * layouts:
+ *  - savings/deposit-like rows: date + signed amount + optional balance + text;
+ *  - card/current-account rows: posting date + processing date + description +
+ *    operation amount + operation currency + credit + debit + commission + account.
+ *
+ * The latter is common for ordinary card expense statements. Parse it by column
+ * semantics rather than by the first signed number we happen to see.
+ */
+function parseHalykAccountRows(
+  lines: readonly string[],
+  currencyCode: CurrencyCode,
+  targetKind: ImportTargetKind,
+): unknown[][] {
+  const cleaned = lines.map(cleanLine);
   const transactions: unknown[][] = [];
-  const signedAmount = /([+\-−–—])\s*((?:\d{1,3}(?:[\s\u00a0\u202f]\d{3})+|\d+)(?:[,.]\d{2}))/u;
+  const rowDate = /^(\d{1,2}[./]\d{1,2}[./]\d{4})\b/;
+  const signedAmountAtStart = /^([+\-−–—])\s*((?:\d{1,3}(?:[\s\u00a0\u202f]\d{3})+|\d+)(?:[,.]\d{2}))/u;
   const unsignedBalance = /^\s*(?:\d{1,3}(?:[\s\u00a0\u202f]\d{3})+|\d+)(?:[,.]\d{2})\s+/u;
+  const currencyRe = /\b(KZT|EUR|USD|RUB)\b/i;
+  const trailingAmounts = /([+\-−–—]?\s*(?:\d{1,3}(?:[\s\u00a0\u202f]\d{3})+|\d+)(?:[,.]\d{2}))/gu;
 
-  for (const rawLine of lines.map(cleanLine)) {
-    const dateMatch = rawLine.match(DATE_RE);
-    if (!dateMatch) continue;
-    const afterDate = rawLine.slice((dateMatch.index ?? 0) + dateMatch[0].length).trim();
-    const amountMatch = afterDate.match(signedAmount);
+  for (let index = 0; index < cleaned.length; index += 1) {
+    const primary = cleaned[index];
+    const firstDate = primary.match(rowDate);
+    if (!firstDate) continue;
+
+    let nextIndex = index + 1;
+    while (nextIndex < cleaned.length && !rowDate.test(cleaned[nextIndex])) nextIndex += 1;
+    const continuation = cleaned.slice(index + 1, Math.min(nextIndex, index + 5));
+
+    const afterFirstDate = primary.slice(firstDate[0].length).trim();
+    const secondDate = afterFirstDate.match(rowDate);
+
+    // Wide current-account/card layout. This is the layout used by Halyk's
+    // KZT card statements with separate credit/debit account-currency columns.
+    if (secondDate) {
+      const afterDates = afterFirstDate.slice(secondDate[0].length).trim();
+      const currencyMatch = afterDates.match(currencyRe);
+      if (currencyMatch && currencyMatch.index !== undefined) {
+        const beforeCurrency = afterDates.slice(0, currencyMatch.index).trim();
+        const operationAmountMatch = beforeCurrency.match(/([+\-−–—])?\s*((?:\d{1,3}(?:[\s\u00a0\u202f]\d{3})+|\d+)(?:[,.]\d{2}))\s*$/u);
+        if (operationAmountMatch && operationAmountMatch.index !== undefined) {
+          const baseDescription = beforeCurrency.slice(0, operationAmountMatch.index).trim();
+          const description = appendDescriptionContinuation(baseDescription, continuation);
+          const accountCurrency = normalizeCurrency(currencyMatch[1]) ?? currencyCode;
+          const afterCurrency = afterDates.slice(currencyMatch.index + currencyMatch[0].length).trim();
+
+          const values: string[] = [];
+          trailingAmounts.lastIndex = 0;
+          let amountToken: RegExpExecArray | null;
+          while ((amountToken = trailingAmounts.exec(afterCurrency)) !== null && values.length < 3) {
+            const parsed = moneyToken(amountToken[1]);
+            if (parsed) values.push(parsed);
+            if (amountToken[0].length === 0) trailingAmounts.lastIndex += 1;
+          }
+
+          const credit = values[0] ?? null;
+          const debit = values[1] ?? null;
+          const operationAmount = normalizedAmount(operationAmountMatch[2], operationAmountMatch[1]);
+
+          if (targetKind === "expenses") {
+            // Only money that actually left the account is an expense. Incoming
+            // transfers (credit column) must never appear in the expense preview.
+            if (nonZeroAmount(debit)) {
+              const magnitude = debit!.replace(/^[+\-]/, "");
+              transactions.push([firstDate[1], description || "Банковская операция", `-${magnitude}`, "contribution", accountCurrency, extractExternalTransactionId(description)]);
+            }
+          } else if (nonZeroAmount(operationAmount)) {
+            transactions.push([
+              firstDate[1],
+              description || "Банковская операция",
+              operationAmount,
+              inferSavingsType(description, operationAmount.startsWith("-") ? "-" : operationAmount.startsWith("+") ? "+" : undefined),
+              accountCurrency,
+              extractExternalTransactionId(description),
+            ]);
+          }
+
+          index = Math.max(index, nextIndex - 1);
+          continue;
+        }
+      }
+    }
+
+    // Compact Halyk savings/account layout retained for existing EUR statements:
+    // date + signed operation amount + optional running balance + description.
+    const amountMatch = afterFirstDate.match(signedAmountAtStart);
     if (!amountMatch) continue;
-
     const amountEnd = (amountMatch.index ?? 0) + amountMatch[0].length;
-    let description = afterDate.slice(amountEnd).trim().replace(unsignedBalance, "").trim();
-    description = description.replace(/\s+/g, " ");
+    let description = afterFirstDate.slice(amountEnd).trim().replace(unsignedBalance, "").trim();
+    description = appendDescriptionContinuation(description, continuation);
     if (!description || /^(?:дата|сумма|остаток|детали)/i.test(description)) continue;
 
+    const amount = normalizedAmount(amountMatch[2], amountMatch[1]);
+    if (targetKind === "expenses" && !amount.startsWith("-")) {
+      index = Math.max(index, nextIndex - 1);
+      continue;
+    }
     transactions.push([
-      dateMatch[1],
+      firstDate[1],
       description,
-      normalizedAmount(amountMatch[2], amountMatch[1]),
+      amount,
       inferSavingsType(description, amountMatch[1]),
       currencyCode,
       extractExternalTransactionId(description),
     ]);
+    index = Math.max(index, nextIndex - 1);
   }
   return transactions;
 }
@@ -168,7 +280,7 @@ export function parsePdfStatementLines(
   const currencyCode = detectStatementCurrency(sourceLines, fallbackCurrency);
 
   if (isHalykAccountStatement(sourceLines)) {
-    const transactions = parseHalykAccountRows(sourceLines, currencyCode);
+    const transactions = parseHalykAccountRows(sourceLines, currencyCode, targetKind);
     return {
       sheet: { name: "PDF", rows: [["Дата", "Описание", "Сумма", "Тип", "Валюта", "ID операции"], ...transactions] },
       currencyCode,
