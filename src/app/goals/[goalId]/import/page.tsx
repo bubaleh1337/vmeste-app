@@ -8,8 +8,11 @@ import { resolveAuthenticatedLocale } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile, getGoalSnapshot, listCategorizationRules, listExpenseCategories } from "@/server/goals/repository";
 
-export default async function ImportPage({ params }: { params: Promise<{ goalId: string }> }) {
+export default async function ImportPage({ params, searchParams }: { params: Promise<{ goalId: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { goalId } = await params;
+  const query = await searchParams;
+  const rawKind = Array.isArray(query.kind) ? query.kind[0] : query.kind;
+  const initialTargetKind = rawKind === "savings" ? "savings" : "expenses";
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   const userId = data?.claims?.sub;
@@ -29,7 +32,7 @@ export default async function ImportPage({ params }: { params: Promise<{ goalId:
     <header className="live-topbar goal-topbar"><Link href={`/goals/${goalId}`} className="back-link">← {snapshot.goal.title}</Link><div className="topbar-actions"><LanguageSwitcher locale={locale} /><form action="/auth/signout" method="post"><button className="text-button" type="submit">{tr(locale, "Выйти", "Sign out")}</button></form></div></header>
     <main className="live-main"><section className="page-section compact-page import-page">
       <div className="page-heading simplified-heading"><span className="eyebrow">{tr(locale, "Безопасный импорт", "Safe import")}</span><h1>PDF / CSV / XLSX</h1><p>{tr(locale, "Сначала приложение распознаёт операции, затем ты проверяешь список и подтверждаешь импорт. Расходы по-прежнему не влияют на накопления.", "The app first recognizes transactions, then you review the list and confirm the import. Expenses still never affect savings progress.")}</p></div>
-      {snapshot.goal.status === "archived" ? <p className="form-error">{tr(locale, "Архивная цель доступна только для чтения. Импорт отключён.", "Archived goals are read-only. Import is disabled.")}</p> : <ImportWizard goalId={goalId} currencyCode={snapshot.goal.currencyCode} participants={snapshot.participants.map(({ id, name }) => ({ id, name }))} currentUserId={userId} categories={categories} categorizationRules={categorizationRules} locale={locale} />}
+      {snapshot.goal.status === "archived" ? <p className="form-error">{tr(locale, "Архивная цель доступна только для чтения. Импорт отключён.", "Archived goals are read-only. Import is disabled.")}</p> : <ImportWizard goalId={goalId} currencyCode={snapshot.goal.currencyCode} participants={snapshot.participants.map(({ id, name }) => ({ id, name }))} currentUserId={userId} categories={categories} categorizationRules={categorizationRules} locale={locale} initialTargetKind={initialTargetKind} />}
     </section></main>
   </div>;
 }

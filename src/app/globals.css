@@ -597,7 +597,10 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 
 /* Stage 3.6: minimalist goal overview with on-demand financial details. */
 .financial-overview { margin-top: 4px; }
-.financial-overview-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.financial-overview-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
+.overview-savings-card { grid-column: 1; grid-row: 1; }
+.overview-expenses-card { grid-column: 2; grid-row: 1; }
+.overview-savings-detail, .overview-expenses-detail { grid-column: 1 / -1; grid-row: 2; }
 .overview-finance-card { position: relative; min-width: 0; min-height: 224px; padding: 22px; border: 1px solid #d8d3c8; border-radius: 22px; background: var(--card); box-shadow: var(--shadow); text-align: left; color: var(--text); transition: border-color .2s ease, transform .2s ease, box-shadow .2s ease; }
 .overview-finance-card:hover { border-color: #b9b4a9; transform: translateY(-1px); }
 .overview-finance-card.is-open { border-color: color-mix(in srgb, var(--sage) 62%, var(--line)); box-shadow: 0 16px 38px rgba(56, 50, 41, .075); }
@@ -618,7 +621,7 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .overview-card-chevron { position: absolute; right: 18px; bottom: 18px; width: 9px; height: 9px; border-right: 2px solid var(--sage-dark); border-bottom: 2px solid var(--sage-dark); transform: rotate(45deg); transition: transform .22s ease; opacity: .72; }
 .overview-finance-card.is-open .overview-card-chevron { transform: rotate(225deg); }
 .overview-expanded { display: grid; grid-template-rows: 0fr; opacity: 0; margin-top: 0; transition: grid-template-rows .26s ease, opacity .2s ease, margin-top .26s ease; }
-.overview-expanded.is-visible { grid-template-rows: 1fr; opacity: 1; margin-top: 14px; }
+.overview-expanded.is-visible { grid-template-rows: 1fr; opacity: 1; margin-top: 2px; animation: overview-disclosure .2s ease-out; }
 .overview-expanded-inner { min-height: 0; overflow: hidden; }
 .overview-detail-section { padding: 22px; border: 1px solid var(--line); border-radius: 20px; background: color-mix(in srgb, var(--card) 84%, transparent); }
 .compact-detail-title { margin-bottom: 12px; }
@@ -641,6 +644,7 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 
 @media (max-width: 760px) {
   .financial-overview-grid { grid-template-columns: 1fr; }
+  .overview-savings-card, .overview-savings-detail, .overview-expenses-card, .overview-expenses-detail { grid-column: 1; grid-row: auto; }
   .overview-finance-card { min-height: 194px; padding: 18px; }
   .overview-card-content { min-height: 150px; }
   .expenses-summary-content { grid-template-columns: minmax(0, 1fr) 92px; gap: 14px; }
@@ -821,4 +825,24 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
   .fx-breakdown-heading small { white-space: normal; }
   .fx-balance-row { grid-template-columns: 1fr; gap: 6px; }
   .fx-balance-row > div:last-child { justify-items: start; text-align: left; }
+}
+
+/* Stage 4.6: mobile refresh, contextual disclosure and explicit import completion. */
+.pull-refresh-surface { position: relative; min-height: 1px; }
+.pull-refresh-content { transform: translateY(var(--pull-distance, 0)); transition: transform .18s ease-out; will-change: transform; }
+.pull-refresh-surface.is-active .pull-refresh-content { transition: none; }
+.pull-refresh-indicator { position: fixed; left: 50%; top: 76px; z-index: 26; display: inline-flex; align-items: center; gap: 8px; max-width: calc(100vw - 32px); padding: 8px 12px; border: 1px solid var(--line); border-radius: 999px; background: color-mix(in srgb, var(--card) 94%, transparent); box-shadow: var(--shadow); color: var(--muted); font-size: 12px; font-weight: 700; opacity: 0; pointer-events: none; transform: translate(-50%, -10px) scale(.96); transition: opacity .14s ease, transform .14s ease; }
+.pull-refresh-surface.is-active .pull-refresh-indicator { opacity: 1; transform: translate(-50%, 0) scale(1); }
+.pull-refresh-indicator.is-ready { color: var(--sage-dark); border-color: color-mix(in srgb, var(--sage) 50%, var(--line)); }
+.pull-refresh-icon { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--sage-soft); color: var(--sage-dark); font-size: 15px; line-height: 1; }
+.pull-refresh-indicator.is-refreshing .pull-refresh-icon { animation: pull-refresh-spin .7s linear infinite; }
+@keyframes pull-refresh-spin { to { transform: rotate(360deg); } }
+
+.simple-import-confirm.is-complete { border-color: color-mix(in srgb, var(--sage) 52%, var(--line)); background: color-mix(in srgb, var(--sage-soft) 62%, var(--card)); }
+.import-complete-title { color: var(--sage-dark); }
+.import-complete-button:disabled { opacity: 1; cursor: default; background: var(--sage); color: white; }
+.import-success-inline { margin-top: 10px; }
+
+@media (hover: hover) and (pointer: fine) {
+  .pull-refresh-indicator { display: none; }
 }

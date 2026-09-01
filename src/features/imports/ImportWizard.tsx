@@ -34,6 +34,7 @@ interface Props {
   categories: { id: string; name: string; defaultDiscretionary: boolean }[];
   categorizationRules: CategorizationRuleOption[];
   locale: AppLocale;
+  initialTargetKind?: ImportTargetKind;
 }
 
 function savingLabels(locale: AppLocale): Record<SavingsType, string> {
@@ -98,11 +99,11 @@ function decodeCsv(buffer: ArrayBuffer): string {
   }
 }
 
-export function ImportWizard({ goalId, currencyCode, participants, currentUserId, categories, categorizationRules, locale }: Props) {
+export function ImportWizard({ goalId, currencyCode, participants, currentUserId, categories, categorizationRules, locale, initialTargetKind = "expenses" }: Props) {
   const router = useRouter();
   const savingsTypeLabels = savingLabels(locale);
   const fileInputId = useId();
-  const [targetKind, setTargetKind] = useState<ImportTargetKind>("expenses");
+  const [targetKind, setTargetKind] = useState<ImportTargetKind>(initialTargetKind);
   const [statementCurrency, setStatementCurrency] = useState<CurrencyCode>(currencyCode);
   const [file, setFile] = useState<File | null>(null);
   const [fileType, setFileType] = useState<ImportFileType | null>(null);
@@ -423,10 +424,11 @@ export function ImportWizard({ goalId, currencyCode, participants, currentUserId
         {removedCount > 0 && <button type="button" className="secondary-button import-restore" onClick={restoreRemovedRows}>{tr(locale, `Вернуть удалённые (${removedCount})`, `Restore removed (${removedCount})`)}</button>}
         {errorCount > 0 && <div className="import-alert error">{tr(locale, `Не удалось распознать ${errorCount} строк. Они не будут импортированы.`, `${errorCount} rows could not be recognized and will not be imported.`)}</div>}
 
-        <div className="import-confirm simple-import-confirm">
-          <div><strong>{targetKind === "expenses" ? tr(locale, `Импортировать расходов: ${selectedCount}`, `Import expenses: ${selectedCount}`) : tr(locale, `Импортировать накоплений: ${selectedCount}`, `Import savings: ${selectedCount}`)}</strong><span>{tr(locale, "До нажатия кнопки ничего не записывается в базу данных.", "Nothing is written to the database until you confirm.")}</span></div>
-          <button type="button" className="primary-button" disabled={busy || fileAlreadyImported || selectedCount === 0 || Boolean(result)} onClick={() => void commitImport()}>{busy ? tr(locale, "Импортирую…", "Importing…") : targetKind === "expenses" ? tr(locale, "Импортировать расходы", "Import expenses") : tr(locale, "Импортировать накопления", "Import savings")}</button>
+        <div className={`import-confirm simple-import-confirm${result ? " is-complete" : ""}`} aria-live="polite">
+          <div>{result ? <><strong className="import-complete-title"><span aria-hidden="true">✓</span> {tr(locale, "Импорт завершён", "Import complete")}</strong><span>{tr(locale, `Добавлено: ${result.acceptedRows}. Дубли: ${result.duplicateRows}. Ошибки строк: ${result.errorRows}.`, `Added: ${result.acceptedRows}. Duplicates: ${result.duplicateRows}. Row errors: ${result.errorRows}.`)}</span></> : <><strong>{targetKind === "expenses" ? tr(locale, `Импортировать расходов: ${selectedCount}`, `Import expenses: ${selectedCount}`) : tr(locale, `Импортировать накоплений: ${selectedCount}`, `Import savings: ${selectedCount}`)}</strong><span>{tr(locale, "До нажатия кнопки ничего не записывается в базу данных.", "Nothing is written to the database until you confirm.")}</span></>}</div>
+          <button type="button" className={`primary-button${result ? " import-complete-button" : ""}`} disabled={busy || fileAlreadyImported || selectedCount === 0 || Boolean(result)} onClick={() => void commitImport()}>{result ? tr(locale, "Импортировано ✓", "Imported ✓") : busy ? tr(locale, "Импортирую…", "Importing…") : targetKind === "expenses" ? tr(locale, "Импортировать расходы", "Import expenses") : tr(locale, "Импортировать накопления", "Import savings")}</button>
         </div>
+        {result && <div className="import-success import-success-inline" role="status"><strong>{tr(locale, "Готово — данные уже сохранены", "Done — the data is saved")}</strong><span>{tr(locale, "Можно вернуться к цели: новые операции уже участвуют в расчётах и аналитике.", "You can return to the goal: the new transactions are already included in totals and analytics.")}</span><button type="button" className="secondary-button" onClick={() => router.push(`/goals/${goalId}`)}>{tr(locale, "Вернуться к цели", "Back to goal")}</button></div>}
       </section>}
 
       {file && <details className="import-advanced" open={!mappingConfident}>
@@ -447,7 +449,6 @@ export function ImportWizard({ goalId, currencyCode, participants, currentUserId
         </div>
       </details>}
 
-      {result && <section className="import-success" role="status"><strong>{tr(locale, "Импорт завершён", "Import complete")}</strong><span>{tr(locale, `Добавлено: ${result.acceptedRows}. Дубли: ${result.duplicateRows}. Удалено перед импортом: ${result.skippedRows}. Ошибки строк: ${result.errorRows}.`, `Added: ${result.acceptedRows}. Duplicates: ${result.duplicateRows}. Removed before import: ${result.skippedRows}. Row errors: ${result.errorRows}.`)}</span><button type="button" className="secondary-button" onClick={() => router.push(`/goals/${goalId}`)}>{tr(locale, "Вернуться к цели", "Back to goal")}</button></section>}
       {error && <div className="import-alert error" role="alert">{error}</div>}
     </div>
   );

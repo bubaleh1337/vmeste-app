@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.9.0 — 2026-09-01
+
+- Added mobile pull-to-refresh on goal pages; refreshing collapses all open disclosures before reloading current data.
+- Savings and expense details now open immediately below the card that was tapped on mobile while remaining full-width on desktop.
+- Import links preserve context: Savings opens the importer in Savings mode and Expenses opens it in Expenses mode.
+- Import completion is now explicit at the confirmation button: the button changes to “Imported ✓” and a success message appears directly below it.
+- Added regression tests for contextual financial disclosure and the importer’s initial target mode.
+- No SQL migration or dependency changes.
+
 ## 0.8.4 — 2026-09-01
 
 - Fixed automatic decimal-separator handling for detected bank CSV/XLSX files.
