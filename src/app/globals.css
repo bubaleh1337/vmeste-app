@@ -846,3 +846,31 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 @media (hover: hover) and (pointer: fine) {
   .pull-refresh-indicator { display: none; }
 }
+
+/* Stage 4.7: compact transaction navigation and dedicated histories. */
+.detail-actions-primary { margin: 4px 0 18px; padding-bottom: 16px; border-bottom: 1px solid var(--line-soft); }
+.history-nav-row { margin-top: 18px; min-height: 66px; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 15px 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--card); color: var(--text); text-decoration: none; transition: border-color .18s ease, transform .18s ease, background .18s ease; }
+.history-nav-row:hover { border-color: color-mix(in srgb, var(--sage) 60%, var(--line)); transform: translateY(-1px); background: color-mix(in srgb, var(--card) 92%, var(--sage-soft)); }
+.history-nav-row > span:first-child { display: grid; gap: 4px; min-width: 0; }
+.history-nav-row strong { font-size: 16px; letter-spacing: -.015em; }
+.history-nav-row small { color: var(--muted); font-size: 12px; }
+.history-nav-chevron { flex: 0 0 auto; color: var(--sage-dark); font-size: 22px; line-height: 1; transition: transform .18s ease; }
+.history-nav-row:hover .history-nav-chevron { transform: translateX(3px); }
+.transaction-history-page { padding-top: 30px; padding-bottom: 54px; }
+.transaction-history-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding-bottom: 22px; border-bottom: 1px solid var(--line-soft); }
+.transaction-history-heading h1 { margin: 5px 0 8px; font-size: clamp(34px, 5vw, 50px); line-height: 1; letter-spacing: -.045em; }
+.transaction-history-heading p { margin: 0; color: var(--muted); line-height: 1.5; }
+.history-count-chip { flex: 0 0 auto; min-width: 36px; min-height: 36px; display: grid; place-items: center; padding: 0 10px; border-radius: 999px; background: var(--sage-soft); color: var(--sage-dark); font-size: 13px; font-weight: 780; font-variant-numeric: tabular-nums; }
+.transaction-history-list { margin-top: 4px; }
+.transaction-history-row { padding: 18px 0; }
+.transaction-description { display: block; margin-top: 5px; color: var(--muted); font-size: 12px; line-height: 1.45; }
+
+@media (max-width: 640px) {
+  .transaction-history-page { padding-top: 22px; }
+  .transaction-history-heading { gap: 12px; padding-bottom: 16px; }
+  .transaction-history-heading h1 { font-size: 34px; }
+  .transaction-history-heading p { font-size: 13px; }
+  .transaction-history-row { grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 16px 0; }
+  .transaction-history-row .row-money { min-width: 94px; }
+  .history-nav-row { margin-top: 14px; }
+}
