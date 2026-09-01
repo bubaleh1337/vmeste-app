@@ -58,7 +58,7 @@ type ExpenseReadRow = {
   spent_by_user_id: string;
   is_discretionary: boolean;
   analytics_status: AnalyticsStatus;
-  source: "manual" | "csv" | "xlsx";
+  source: "manual" | "csv" | "xlsx" | "pdf";
   created_by: string;
   created_at: string;
   deleted_at: string | null;

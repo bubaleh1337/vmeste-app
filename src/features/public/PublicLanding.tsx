@@ -31,7 +31,7 @@ export function PublicLanding({ locale }: { locale: AppLocale }) {
         <div className="public-feature-grid">
           <article><strong>1</strong><h3>{tr(locale, "Создай цель", "Create a goal")}</h3><p>{tr(locale, "Укажи сумму и срок. Можно вести несколько целей одновременно.", "Set an amount and deadline. You can manage several goals at once.")}</p></article>
           <article><strong>2</strong><h3>{tr(locale, "Пригласи близкого человека", "Invite someone close")}</h3><p>{tr(locale, "Оба участника видят общую сумму и вклад каждого.", "Everyone in the goal can see the shared total and each contribution.")}</p></article>
-          <article><strong>3</strong><h3>{tr(locale, "Добавляй накопления и расходы", "Add savings and expenses")}</h3><p>{tr(locale, "Вручную или из CSV/XLSX. Расходы анализируются отдельно.", "Enter them manually or import CSV/XLSX. Expenses stay separate from savings.")}</p></article>
+          <article><strong>3</strong><h3>{tr(locale, "Добавляй накопления и расходы", "Add savings and expenses")}</h3><p>{tr(locale, "Вручную или из PDF/CSV/XLSX. Расходы анализируются отдельно.", "Enter them manually or import PDF/CSV/XLSX. Expenses stay separate from savings.")}</p></article>
         </div>
       </section>
 

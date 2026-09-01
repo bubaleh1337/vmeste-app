@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { detectImportMapping, maskProbableFinancialNumbers, parseDelimitedText, parseImportAmount, parseImportDate, prepareRows } from "./normalize";
+import { detectImportMapping, detectSavingsStatementCurrency, maskProbableFinancialNumbers, parseDelimitedText, parseImportAmount, parseImportDate, prepareRows } from "./normalize";
 
 const baseMapping = {
   headerRow: 1,
@@ -70,6 +70,24 @@ describe("import normalization", () => {
       amountColumn: 2,
       expenseSign: "negative",
     });
+  });
+
+
+  it("detects EUR from the real-style Halyk savings CSV and preserves cents", () => {
+    const rows = parseDelimitedText([
+      "date,description,amount,type,currency",
+      "2025-08-01,Дополнительный взнос,16.06,пополнение,EUR",
+      "2025-09-02,Выплата вознаграждения,0.23,проценты,EUR",
+    ].join("\n"));
+    const currency = detectSavingsStatementCurrency(rows, "KZT");
+    const detected = detectImportMapping(rows, baseMapping, "savings");
+    const prepared = prepareRows(rows, "savings", detected.mapping, currency);
+
+    expect(currency).toBe("EUR");
+    expect(detected.mapping.decimalSeparator).toBe("auto");
+    expect(prepared[0].amountMinor).toBe("1606");
+    expect(prepared[0].currencyCode).toBe("EUR");
+    expect(prepared[1].amountMinor).toBe("23");
   });
 
   it("masks probable card or account numbers in preview", () => {

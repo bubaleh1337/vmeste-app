@@ -16,6 +16,7 @@ const rowSchema = z.object({
   analyticsStatus: z.enum(["included", "excluded", "needs_review"]),
   selected: z.boolean(),
   errorCode: z.string().max(120).nullable(),
+  currencyCode: z.enum(["KZT", "EUR", "USD", "RUB"]),
 });
 
 const requestSchema = z.object({

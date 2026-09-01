@@ -9,16 +9,19 @@ export function LanguageSwitcher({ locale }: { locale: AppLocale }) {
   const query = search.toString();
   const next = `${pathname}${query ? `?${query}` : ""}`;
   const nextLocale = locale === "ru" ? "en" : "ru";
-  const href = `/locale/${nextLocale}?next=${encodeURIComponent(next)}`;
 
+  // A native GET form intentionally performs a full navigation. This avoids
+  // stale Next.js router-cache content after the locale cookie/profile changes.
   return (
-    <button
-      className="language-switch"
-      type="button"
-      onClick={() => window.location.href = href}
-      aria-label={locale === "ru" ? "Switch to English" : "Переключить на русский"}
-    >
-      {locale === "ru" ? "EN" : "RU"}
-    </button>
+    <form action={`/locale/${nextLocale}`} method="get" className="language-switch-form">
+      <input type="hidden" name="next" value={next} />
+      <button
+        className="language-switch"
+        type="submit"
+        aria-label={locale === "ru" ? "Switch to English" : "Переключить на русский"}
+      >
+        {locale === "ru" ? "EN" : "RU"}
+      </button>
+    </form>
   );
 }

@@ -3,7 +3,7 @@ import { localMonthKey, previousMonthKey } from "./analytics";
 
 export type ExpensePeriodFilter = "current" | "previous" | "all";
 export type ExpenseStatusFilter = "all" | "included" | "excluded" | "needs_review";
-export type ExpenseSourceFilter = "all" | "manual" | "csv" | "xlsx";
+export type ExpenseSourceFilter = "all" | "manual" | "csv" | "xlsx" | "pdf";
 
 export interface ExpenseFilters {
   period: ExpensePeriodFilter;
@@ -22,7 +22,7 @@ export function normalizeExpenseFilters(query: Record<string, string | string[] 
     period: periodValue === "previous" || periodValue === "all" ? periodValue : "current",
     participantId: value("expenseParticipant") || "all",
     categoryId: value("expenseCategory") || "all",
-    source: sourceValue === "manual" || sourceValue === "csv" || sourceValue === "xlsx" ? sourceValue : "all",
+    source: sourceValue === "manual" || sourceValue === "csv" || sourceValue === "xlsx" || sourceValue === "pdf" ? sourceValue : "all",
     status: statusValue === "included" || statusValue === "excluded" || statusValue === "needs_review" ? statusValue : "all",
   };
 }

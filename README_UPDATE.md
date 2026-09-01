@@ -1,17 +1,25 @@
-# Update 4.4 — multi-currency savings
+# Обновление 4.5.1
 
-Поддерживаются KZT, EUR, USD и RUB внутри одной цели.
+Исправления импорта реальных банковских выписок:
 
-- Валюта цели остаётся основной валютой шкалы и целевой суммы.
-- При добавлении накопления можно выбрать валюту операции.
-- Исходная сумма и валюта операции сохраняются без изменения.
-- Общий прогресс пересчитывается по официальному курсу НБК.
-- Кросс-курсы между EUR/USD/RUB рассчитываются через KZT целочисленной арифметикой.
-- Расходы пока остаются в основной валюте цели и не смешиваются с мультивалютными накоплениями.
-- Валюта уже сохранённой операции неизменяема: при ошибке операцию нужно удалить и создать заново.
+- PDF.js больше не падает на `document.destroy is not a function`;
+- добавлен отдельный разбор PDF Halyk;
+- CSV/XLSX накоплений автоматически определяют EUR/USD/RUB/KZT по столбцу валюты;
+- исходные суммы валютных операций не конвертируются при импорте;
+- ненулевые копейки/центы показываются для всех поддерживаемых валют.
 
-## Миграция
+Новых SQL-миграций и npm-зависимостей нет.
 
-Перед запуском 0.7.0 выполнить `supabase/migrations/202609010002_multicurrency_savings.sql` в development и production Supabase.
+## 4.5.2 — clean release preflight
 
-Миграция не меняет существующие финансовые строки. Она обновляет только защитный trigger: накопления разрешены в четырёх поддерживаемых валютах, а отрицательный баланс проверяется отдельно по каждой валюте.
+If 4.5.1 imported PDF/foreign-currency statements successfully but `release.ps1` produced ~1700 ESLint findings, install 4.5.2. The findings came from the generated `public/pdf.worker.min.mjs`, not application source. This patch excludes that generated vendor worker from ESLint and removes the remaining language-switch navigation warning. No SQL migration or `npm install` is required.
+
+
+## 4.5.3 — PDF.js typecheck fix
+
+Исправлена несовместимость TypeScript с `pdfjs-dist 6.3.289`: удалён устаревший параметр `isEvalSupported` из вызова `getDocument()`. Поведение PDF-импорта не меняется. SQL и `npm install` не нужны.
+
+
+## 4.5.4 — Halyk decimal separator regression fix
+
+Исправлен unit-test и реальная логика автодетекта сумм: банковские CSV/XLSX после автоматического сопоставления всегда начинают с `auto` для десятичного разделителя. Поэтому `16.06 EUR` больше не может интерпретироваться как `1606.00 EUR`, даже если ранее в дополнительных настройках был выбран разделитель `,`. SQL и `npm install` не нужны.

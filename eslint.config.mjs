@@ -19,5 +19,6 @@ export default defineConfig([
     "test-results/**",
     "eslint.config.mjs",
     "postcss.config.mjs",
+    "public/pdf.worker.min.mjs",
   ]),
 ]);

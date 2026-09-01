@@ -1,4 +1,4 @@
-import type { SavingsType } from "@/lib/money";
+import type { CurrencyCode, SavingsType } from "@/lib/money";
 import type {
   DateFormat,
   DecimalSeparator,
@@ -9,6 +9,50 @@ import type {
 
 export const IMPORT_MAX_FILE_BYTES = 5 * 1024 * 1024;
 export const IMPORT_MAX_DATA_ROWS = 1000;
+
+const SUPPORTED_IMPORT_CURRENCIES = new Set<CurrencyCode>(["KZT", "EUR", "USD", "RUB"]);
+
+function importCurrency(value: unknown): CurrencyCode | null {
+  const text = cellText(value).trim().toUpperCase();
+  if (SUPPORTED_IMPORT_CURRENCIES.has(text as CurrencyCode)) return text as CurrencyCode;
+  const explicit = text.match(/(?:CURRENCY|ВАЛЮТА(?:\s+(?:СЧ[ЕЁ]ТА|ОПЕРАЦИИ))?)\s*[:\-]?\s*(KZT|EUR|USD|RUB)\b/i)?.[1]?.toUpperCase();
+  return explicit && SUPPORTED_IMPORT_CURRENCIES.has(explicit as CurrencyCode) ? explicit as CurrencyCode : null;
+}
+
+/**
+ * Detects the account/statement currency for savings CSV/XLSX exports.
+ * A bank account statement is expected to have one account currency. If the
+ * file is ambiguous, the caller's current selection remains the fallback.
+ */
+export function detectSavingsStatementCurrency(rows: unknown[][], fallback: CurrencyCode): CurrencyCode {
+  const scanRows = rows.slice(0, 50);
+
+  for (const row of scanRows) {
+    for (const cell of row) {
+      const text = cellText(cell);
+      if (!/(?:currency|валюта)/i.test(text)) continue;
+      const detected = importCurrency(text);
+      if (detected) return detected;
+    }
+  }
+
+  const headerLimit = Math.min(rows.length, 20);
+  for (let rowIndex = 0; rowIndex < headerLimit; rowIndex += 1) {
+    const headers = rows[rowIndex].map((value) => cellText(value).trim().toLocaleLowerCase("ru-RU").replace(/ё/g, "е"));
+    const currencyColumn = headers.findIndex((header) => /^(?:currency|валюта(?:\s+(?:счета|операции))?)$/.test(header));
+    if (currencyColumn < 0) continue;
+
+    const currencies = new Set<CurrencyCode>();
+    for (const dataRow of rows.slice(rowIndex + 1, rowIndex + 101)) {
+      const detected = importCurrency(dataRow[currencyColumn]);
+      if (detected) currencies.add(detected);
+      if (currencies.size > 1) return fallback;
+    }
+    if (currencies.size === 1) return [...currencies][0];
+  }
+
+  return fallback;
+}
 
 export function parseDelimitedText(text: string, delimiter?: string): string[][] {
   const source = text.replace(/^\uFEFF/, "");
@@ -173,6 +217,9 @@ export function parseImportAmount(value: unknown, decimalSeparator: DecimalSepar
     } else if (lastComma >= 0) {
       const decimals = text.length - lastComma - 1;
       text = decimals <= 2 ? text.replace(",", ".") : text.replace(/,/g, "");
+    } else if (lastDot >= 0) {
+      const decimals = text.length - lastDot - 1;
+      if (decimals > 2) text = text.replace(/\./g, "");
     }
   }
 
@@ -213,6 +260,7 @@ export function prepareRows(
   rows: unknown[][],
   targetKind: ImportTargetKind,
   mapping: ImportMapping,
+  currencyCode = "KZT",
 ): PreparedImportRow[] {
   const start = Math.max(0, mapping.headerRow);
   const dataRows = rows
@@ -267,6 +315,7 @@ export function prepareRows(
       analyticsStatus: targetKind === "expenses" ? mapping.analyticsStatus : "included",
       selected: errorCode === null,
       errorCode,
+      currencyCode,
     };
   });
 }
@@ -333,6 +382,10 @@ export function detectImportMapping(
     debitColumn: debitColumn >= 0 ? debitColumn : base.debitColumn,
     creditColumn: creditColumn >= 0 ? creditColumn : base.creditColumn,
     typeColumn,
+    // Auto-detected bank files can use either 16.06 or 16,06 regardless of
+    // the user's previous advanced-setting choice. The user can still
+    // override this after detection when a particular export is ambiguous.
+    decimalSeparator: "auto",
   };
 
   if (targetKind === "expenses" && !hasDebitCredit && mapping.amountColumn >= 0) {

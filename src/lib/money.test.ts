@@ -80,8 +80,10 @@ describe("minor-unit precision", () => {
 
 
 describe("currency presentation", () => {
-  it("formats RUB without floating-point arithmetic", () => {
-    expect(formatMoney(123456n, "RUB", "ru-RU")).toBe("1 234 ₽");
-    expect(formatMoney(123456n, "RUB", "en-US")).toBe("1 234 ₽");
+  it("preserves non-zero minor units for every supported currency", () => {
+    expect(formatMoney(123456n, "RUB", "ru-RU")).toBe("1 234,56 ₽");
+    expect(formatMoney(607333n, "KZT", "ru-RU")).toBe("6 073,33 ₸");
+    expect(formatMoney(1606n, "EUR", "ru-RU")).toBe("16,06 €");
+    expect(formatMoney(123400n, "RUB", "en-US")).toBe("1 234 ₽");
   });
 });

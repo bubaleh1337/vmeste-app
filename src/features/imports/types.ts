@@ -1,7 +1,7 @@
 import type { SavingsType } from "@/lib/money";
 
 export type ImportTargetKind = "savings" | "expenses";
-export type ImportFileType = "csv" | "xlsx";
+export type ImportFileType = "csv" | "xlsx" | "pdf";
 export type DateFormat = "auto" | "dd.mm.yyyy" | "dd/mm/yyyy" | "yyyy-mm-dd" | "mm/dd/yyyy";
 export type DecimalSeparator = "auto" | "comma" | "dot";
 export type AmountMode = "signed" | "debit_credit";
@@ -42,6 +42,7 @@ export interface PreparedImportRow {
   analyticsStatus: "included" | "excluded" | "needs_review";
   selected: boolean;
   errorCode: string | null;
+  currencyCode: string;
 }
 
 export interface PreviewResult {
