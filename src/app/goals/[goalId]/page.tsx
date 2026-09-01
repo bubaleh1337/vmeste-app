@@ -15,6 +15,7 @@ import { SavingsDashboard } from "@/features/savings/SavingsDashboard";
 import { participantNetSavings, sharePercent } from "@/features/savings/analytics";
 import type { LiveAuditEntry, LiveExpense, LiveParticipant, LiveSaving } from "@/features/live/types";
 import { localeTag, systemCategoryName, tr, type AppLocale } from "@/lib/i18n";
+import { resolveAuthenticatedLocale } from "@/lib/i18n/server";
 import {
   calculateActualSaved,
   calculateIncludedExpenses,
@@ -87,7 +88,7 @@ export default async function GoalPage({ params, searchParams }: { params: Promi
   if (!userId) redirect(`/login?next=${encodeURIComponent(`/goals/${goalId}`)}`);
   const [snapshot, profile] = await Promise.all([getGoalSnapshot(goalId, userId), getCurrentProfile(userId)]);
   if (!snapshot) notFound(); if (!profile?.displayName) redirect(`/profile/setup?next=${encodeURIComponent(`/goals/${goalId}`)}`);
-  const locale = profile.locale; const numberLocale = localeTag(locale); const labels = savingLabels(locale); const readOnly = snapshot.goal.status === "archived";
+  const locale = await resolveAuthenticatedLocale(profile.locale); const numberLocale = localeTag(locale); const labels = savingLabels(locale); const readOnly = snapshot.goal.status === "archived";
   const [rawCategorySettings, invitations] = await Promise.all([listExpenseCategorySettings(goalId), snapshot.goal.role === "owner" && !readOnly ? listGoalInvitations(goalId) : Promise.resolve([])]);
   const categorySettings = rawCategorySettings.map((category) => ({ ...category, name: category.isSystem ? systemCategoryName(category.key, category.name, locale) : category.name }));
   const categoryNameById = new Map(categorySettings.map((category) => [category.id, category.name]));
@@ -101,7 +102,7 @@ export default async function GoalPage({ params, searchParams }: { params: Promi
   const overviewExpenseGradient = currentMonthExpenseGroups.length ? currentMonthExpenseGroups.map((group,index)=>{const before=currentMonthExpenseGroups.slice(0,index).reduce((sum,item)=>sum+percentOf(item.amountMinor,currentMonthExpenseTotal),0);const after=before+percentOf(group.amountMinor,currentMonthExpenseTotal);const color=categoryColorById.get(group.categoryId)??["#6F806A","#C88F87","#C2A15C","#8F9B88"][index%4];return `${color} ${before}% ${after}%`;}).join(", ") : "var(--line) 0 100%";
   const hasCustomExpenseFilters = expenseFilters.period !== "current" || expenseFilters.participantId !== "all" || expenseFilters.categoryId !== "all" || expenseFilters.source !== "all" || expenseFilters.status !== "all"; const addSaving = addSavingAction.bind(null, goalId); const addExpense = addExpenseAction.bind(null, goalId); const updateGoal = updateGoalAction.bind(null, goalId); const hasDeleted = snapshot.deletedSavings.length > 0 || localizedDeletedExpenses.length > 0; const money=(value:bigint)=>formatMoney(value,snapshot.goal.currencyCode,numberLocale);
 
-  return <div className="live-shell"><PreferenceSync locale={profile.locale} theme={profile.theme} font={profile.font} /><RealtimeGoalSync goalId={goalId} />
+  return <div className="live-shell"><PreferenceSync locale={locale} theme={profile.theme} font={profile.font} /><RealtimeGoalSync goalId={goalId} />
     <header className="live-topbar goal-topbar"><Link href="/" className="back-link">← {tr(locale,"Мои цели","My goals")}</Link><div className="topbar-actions"><LanguageSwitcher locale={locale} /><Link className="text-button topbar-link" href="/support">{tr(locale,"Помощь","Help")}</Link><Link className="text-button topbar-link" href="/profile">{tr(locale,"Профиль","Profile")}</Link><form action="/auth/signout" method="post"><button className="text-button" type="submit">{tr(locale,"Выйти","Sign out")}</button></form></div></header>
     <main className="live-main"><section className="page-section compact-page">
       <div className="overview-heading-row simplified-heading-row"><div className="page-heading simplified-heading"><span className="eyebrow">{tr(locale,"до","by")} {dateLabel(snapshot.goal.targetDate,locale)}</span><h1>{snapshot.goal.title}</h1></div><span className="role-chip">{readOnly?tr(locale,"Архив · только чтение","Archived · read only"):snapshot.goal.role==="owner"?tr(locale,"Владелец","Owner"):tr(locale,"Участник","Member")}</span></div>

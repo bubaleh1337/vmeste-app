@@ -1,10 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { normalizeFont, normalizeLocale, normalizeTheme, systemCategoryName, tr } from "./index";
+import { normalizeFont, localeFromLanguageTag, normalizeLocale, normalizeTheme, systemCategoryName, tr } from "./index";
 
 describe("interface preferences", () => {
   it("switches complete labels by locale", () => {
     expect(tr("ru", "Расходы", "Expenses")).toBe("Расходы");
     expect(tr("en", "Расходы", "Expenses")).toBe("Expenses");
+  });
+
+  it("uses English only for an English system language and falls back to Russian", () => {
+    expect(localeFromLanguageTag("en-US,en;q=0.9")).toBe("en");
+    expect(localeFromLanguageTag("ru-RU,ru;q=0.9,en;q=0.8")).toBe("ru");
+    expect(localeFromLanguageTag("de-DE,de;q=0.9")).toBe("ru");
+    expect(localeFromLanguageTag(null)).toBe("ru");
   });
 
   it("normalizes stored locale, theme and font safely", () => {

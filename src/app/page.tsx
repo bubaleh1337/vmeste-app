@@ -1,7 +1,7 @@
 import { DemoApp } from "@/features/demo/DemoApp";
 import { LiveHome } from "@/features/live/LiveHome";
 import { PublicLanding } from "@/features/public/PublicLanding";
-import { getCookieLocale } from "@/lib/i18n/server";
+import { getCookieLocale, resolveAuthenticatedLocale } from "@/lib/i18n/server";
 import { tr } from "@/lib/i18n";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
@@ -25,7 +25,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ e
   const profile = await getCurrentProfile(userId);
   if (!profile?.displayName) redirect("/profile/setup");
 
-  const goals = await listGoals(userId);
+  const [goals, locale] = await Promise.all([listGoals(userId), resolveAuthenticatedLocale(profile.locale)]);
   const params = await searchParams;
-  return <LiveHome profile={profile} goals={goals} error={params.error} />;
+  return <LiveHome profile={{ ...profile, locale }} goals={goals} error={params.error} />;
 }

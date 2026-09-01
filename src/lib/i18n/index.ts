@@ -25,6 +25,11 @@ export function tr(locale: AppLocale, ru: string, en: string): string {
   return locale === "en" ? en : ru;
 }
 
+
+export function localeFromLanguageTag(value: string | null | undefined): AppLocale {
+  return value?.trim().toLowerCase().startsWith("en") ? "en" : DEFAULT_LOCALE;
+}
+
 export function normalizeLocale(value: string | null | undefined): AppLocale {
   return value?.toLowerCase().startsWith("en") ? "en" : "ru";
 }
