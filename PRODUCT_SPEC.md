@@ -583,3 +583,12 @@ Apple OAuth, домен, OAuth branding, production deployment, security review,
 - Keyboard focus is visible on buttons, links, form fields and disclosure summaries.
 - Public responses include baseline headers for HSTS, frame protection, base URI protection, MIME sniffing prevention and restrictive legacy cross-domain policies.
 - This stage does not change financial behavior, stored data or the Supabase schema.
+
+## Stage 5.1 — Manual entry confirmation
+
+- Manual savings and expense forms must show a pending state while a write is in progress.
+- The submit control must be disabled during the request to prevent accidental duplicate operations.
+- After a successful write, confirmation must appear next to the submit control without requiring the user to scroll to a changed aggregate.
+- Successfully submitted fields are reset for the next entry; starting a new entry dismisses the previous confirmation.
+- Confirmation is announced through an accessible live status.
+- This stage does not change financial calculations, stored data or the Supabase schema.

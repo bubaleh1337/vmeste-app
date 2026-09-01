@@ -179,3 +179,7 @@ Version `0.12.0` introduces the selected app mark: two connected rounded forms r
 ## Stage 5.0 — accessibility and security hardening
 
 Version `0.13.0` moves primary actions to each theme's dark accent token for WCAG AA contrast, adds a consistent visible keyboard focus ring and strengthens baseline public HTTP headers. E2E startup now binds explicitly to localhost for stable test execution in restricted environments. No database migration or new dependency is required.
+
+## Stage 5.1 — manual entry confirmation
+
+Version `0.14.0` makes manual savings and expense entry explicit: the submit button shows pending and success states, duplicate clicks are blocked while the request is running, and a confirmation appears beside the button after the form is cleared. No database migration or new dependency is required.
