@@ -802,3 +802,23 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .auth-stack .auth-card { width: 100%; }
 .preference-fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
 .preference-fieldset legend { font-size: 13px; font-weight: 720; margin-bottom: 8px; }
+
+/* Stage 4.4: multi-currency savings. */
+.fx-breakdown { display: grid; gap: 14px; margin: 12px 0 16px; padding: 18px; }
+.fx-breakdown-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.fx-breakdown-heading h3 { margin: 4px 0 0; font-size: 18px; }
+.fx-breakdown-heading small { color: var(--muted); white-space: nowrap; }
+.fx-balance-list { display: grid; gap: 0; border-top: 1px solid var(--line-soft); }
+.fx-balance-row { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 18px; padding: 12px 0; border-bottom: 1px solid var(--line-soft); }
+.fx-balance-row > div { display: grid; gap: 3px; }
+.fx-balance-row > div:last-child { justify-items: end; text-align: right; }
+.fx-balance-row span, .fx-balance-row small { color: var(--muted); font-size: 12px; }
+.fx-warning { margin: 10px 0 16px; }
+.readonly-field { min-height: 44px; display: flex; align-items: center; padding: 9px 11px; border: 1px solid var(--line); border-radius: 11px; background: var(--bg); font-size: 14px; }
+.converted-amount { display: block; margin-top: 3px; color: var(--muted); font-weight: 500; white-space: nowrap; }
+@media (max-width: 620px) {
+  .fx-breakdown-heading { display: grid; }
+  .fx-breakdown-heading small { white-space: normal; }
+  .fx-balance-row { grid-template-columns: 1fr; gap: 6px; }
+  .fx-balance-row > div:last-child { justify-items: start; text-align: left; }
+}

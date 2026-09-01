@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { APP_NAME, SUPPORT_EMAIL, SUPPORT_TELEGRAM_LABEL, SUPPORT_TELEGRAM_URL } from "@/lib/config";
+import { SUPPORT_EMAIL, SUPPORT_TELEGRAM_LABEL, SUPPORT_TELEGRAM_URL } from "@/lib/config";
 import { LanguageSwitcher } from "@/features/preferences/LanguageSwitcher";
 import { tr } from "@/lib/i18n";
 import { getCookieLocale } from "@/lib/i18n/server";

@@ -1,9 +1,17 @@
-# Update 4.3.1
+# Update 4.4 — multi-currency savings
 
-Fixes language persistence and cross-page consistency. No SQL migration and no new npm dependencies are required.
+Поддерживаются KZT, EUR, USD и RUB внутри одной цели.
 
-Rules:
-- for signed-in users, the locale saved in the profile is the single source of truth on every authenticated page;
-- on the first visit/setup, English is selected only when the browser/system language is English; otherwise Russian is used;
-- manual switching persists the choice to both the profile and browser cookie;
-- switching performs a full navigation to clear stale Next.js route state, so one page cannot remain in the previous language.
+- Валюта цели остаётся основной валютой шкалы и целевой суммы.
+- При добавлении накопления можно выбрать валюту операции.
+- Исходная сумма и валюта операции сохраняются без изменения.
+- Общий прогресс пересчитывается по официальному курсу НБК.
+- Кросс-курсы между EUR/USD/RUB рассчитываются через KZT целочисленной арифметикой.
+- Расходы пока остаются в основной валюте цели и не смешиваются с мультивалютными накоплениями.
+- Валюта уже сохранённой операции неизменяема: при ошибке операцию нужно удалить и создать заново.
+
+## Миграция
+
+Перед запуском 0.7.0 выполнить `supabase/migrations/202609010002_multicurrency_savings.sql` в development и production Supabase.
+
+Миграция не меняет существующие финансовые строки. Она обновляет только защитный trigger: накопления разрешены в четырёх поддерживаемых валютах, а отрицательный баланс проверяется отдельно по каждой валюте.

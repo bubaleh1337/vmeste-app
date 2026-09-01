@@ -558,3 +558,15 @@ Apple OAuth, домен, OAuth branding, production deployment, security review,
 - production-данные продолжают жить в текущем Supabase-проекте при переходе из beta в обычный релиз.
 
 Мультивалютность меняет прежнюю границу MVP «без конвертации валют», поэтому до её реализации схема и финансовые инварианты должны быть расширены отдельной спецификацией. Нельзя молча переиспользовать текущую одно-валютную модель. Исходная сумма и валюта операции должны сохраняться неизменно, а курс/источник/время оценки — быть проверяемыми. Финансовая математика по-прежнему не использует `float`.
+
+## Stage 4.4 — Multi-currency savings
+
+- Supported savings currencies: `KZT`, `EUR`, `USD`, `RUB`.
+- The goal currency remains the reporting/target currency for the progress bar and target amount.
+- Every savings transaction permanently stores its original `amount_minor` and `currency_code`.
+- Foreign-currency savings are converted only for reporting/progress using the current official National Bank of Kazakhstan rate.
+- Cross-rates between non-KZT currencies are derived through KZT using integer/rational arithmetic; money calculations must not use floating point.
+- UI must show the original amount, converted equivalent, effective rate date and source when conversion is used.
+- If the official rate is temporarily unavailable, foreign amounts must not be silently converted with guessed data; UI must disclose that the converted total is incomplete.
+- Negative-balance protection applies per original currency.
+- Expenses remain denominated in the goal currency in this stage; multi-currency expenses are out of scope.
