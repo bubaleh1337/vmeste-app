@@ -175,3 +175,7 @@ Duplicate reconciliation is bank-agnostic. Exact file SHA-256 remains the first 
 ## Stage 4.9 — app icon
 
 Version `0.12.0` introduces the selected app mark: two connected rounded forms representing a shared goal. The same mark is used in the interface, browser favicon, Apple Touch Icon and installable PWA icons, including a maskable variant. No database migration or new dependency is required.
+
+## Stage 5.0 — accessibility and security hardening
+
+Version `0.13.0` moves primary actions to each theme's dark accent token for WCAG AA contrast, adds a consistent visible keyboard focus ring and strengthens baseline public HTTP headers. E2E startup now binds explicitly to localhost for stable test execution in restricted environments. No database migration or new dependency is required.
