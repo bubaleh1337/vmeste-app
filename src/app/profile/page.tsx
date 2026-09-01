@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/server/goals/repository";
 import { APP_NAME, SUPPORT_EMAIL, SUPPORT_TELEGRAM_LABEL, SUPPORT_TELEGRAM_URL } from "@/lib/config";
 import { tr } from "@/lib/i18n";
+import { resolveAuthenticatedLocale } from "@/lib/i18n/server";
 
 export default async function ProfilePage({ searchParams }: { searchParams: Promise<{ saved?: string; error?: string }> }) {
   const params = await searchParams;
@@ -17,11 +18,11 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
 
   const profile = await getCurrentProfile(userId);
   if (!profile?.displayName) redirect("/profile/setup?next=%2Fprofile");
-  const locale = profile.locale;
+  const locale = await resolveAuthenticatedLocale(profile.locale);
 
   return (
     <div className="live-shell">
-      <PreferenceSync locale={profile.locale} theme={profile.theme} font={profile.font} />
+      <PreferenceSync locale={locale} theme={profile.theme} font={profile.font} />
       <header className="live-topbar">
         <Link href="/" className="back-link">← {tr(locale, "Мои цели", "My goals")}</Link>
         <div className="topbar-actions"><LanguageSwitcher locale={locale} /><form action="/auth/signout" method="post"><button className="text-button" type="submit">{tr(locale, "Выйти", "Sign out")}</button></form></div>
@@ -35,7 +36,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
           </div>
 
           {params.error && <p className="form-error" role="alert">{tr(locale, "Не удалось сохранить профиль. Проверь данные.", "Could not save the profile. Check the entered values.")}</p>}
-          <ProfileForm displayName={profile.displayName} timeZone={profile.timeZone} locale={profile.locale} theme={profile.theme} font={profile.font} saved={params.saved === "1"} />
+          <ProfileForm displayName={profile.displayName} timeZone={profile.timeZone} locale={locale} theme={profile.theme} font={profile.font} saved={params.saved === "1"} />
 
           <section className="panel export-panel">
             <div><span className="eyebrow">{tr(locale, "Твои данные", "Your data")}</span><h2>{tr(locale, "Экспорт", "Export")}</h2><p>{tr(locale, "Скачай файл со своим профилем и основными данными доступных целей. Защищённые токены приглашений в экспорт не входят.", "Download a file with your profile and the main data from goals you can access. Protected invitation tokens are excluded.")}</p></div>

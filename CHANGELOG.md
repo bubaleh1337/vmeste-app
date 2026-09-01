@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.1 — 2026-09-01
+
+- Fixed language changing between pages without user action.
+- Authenticated pages now use the saved profile locale as their single source of truth.
+- First-use language follows the browser/system language for English, otherwise defaults to Russian.
+- Language switching performs a full navigation after persisting the choice to avoid stale Next.js route cache.
+
+
 Все заметные изменения приложения фиксируются здесь после успешного preflight и перед публикацией.
 
 ## [0.6.0] — 2026-09-01

@@ -5,6 +5,7 @@ import { LanguageSwitcher } from "@/features/preferences/LanguageSwitcher";
 import { PreferenceSync } from "@/features/preferences/PreferenceSync";
 import { APP_NAME } from "@/lib/config";
 import { tr } from "@/lib/i18n";
+import { resolveAuthenticatedLocale } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/server/goals/repository";
 import { acceptInvitationAction } from "./actions";
@@ -20,7 +21,7 @@ export default async function InvitePage({ params, searchParams }: { params: Pro
 
   const profile = await getCurrentProfile(userId);
   if (!profile?.displayName) redirect(`/profile/setup?next=${encodeURIComponent(currentPath)}`);
-  const locale = profile.locale;
+  const locale = await resolveAuthenticatedLocale(profile.locale);
 
   const tokenHash = createHash("sha256").update(token).digest("hex");
   const { data: preview, error } = await supabase.rpc("get_goal_invitation_preview", { p_token_hash: tokenHash });
@@ -28,13 +29,13 @@ export default async function InvitePage({ params, searchParams }: { params: Pro
 
   if (error || !row) {
     return (
-      <main className="auth-page"><PreferenceSync locale={profile.locale} theme={profile.theme} font={profile.font} /><section className="auth-card"><div className="auth-card-top"><span className="eyebrow">{APP_NAME}</span><LanguageSwitcher locale={locale} /></div><h1>{tr(locale, "Ссылка больше не действует", "This link is no longer valid")}</h1><p>{tr(locale, "Она могла истечь, быть отозвана или уже использована.", "It may have expired, been revoked or already been used.")}</p><Link className="secondary-button auth-link" href="/">{tr(locale, "Перейти к моим целям", "Go to my goals")}</Link></section></main>
+      <main className="auth-page"><PreferenceSync locale={locale} theme={profile.theme} font={profile.font} /><section className="auth-card"><div className="auth-card-top"><span className="eyebrow">{APP_NAME}</span><LanguageSwitcher locale={locale} /></div><h1>{tr(locale, "Ссылка больше не действует", "This link is no longer valid")}</h1><p>{tr(locale, "Она могла истечь, быть отозвана или уже использована.", "It may have expired, been revoked or already been used.")}</p><Link className="secondary-button auth-link" href="/">{tr(locale, "Перейти к моим целям", "Go to my goals")}</Link></section></main>
     );
   }
 
   return (
     <main className="auth-page">
-      <PreferenceSync locale={profile.locale} theme={profile.theme} font={profile.font} />
+      <PreferenceSync locale={locale} theme={profile.theme} font={profile.font} />
       <form className="auth-card" action={acceptInvitationAction.bind(null, token)}>
         <div className="auth-card-top"><span className="eyebrow">{tr(locale, "Приглашение", "Invitation")}</span><LanguageSwitcher locale={locale} /></div>
         <h1>{String(row.goal_title)}</h1>

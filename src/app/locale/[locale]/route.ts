@@ -19,5 +19,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // Language switching must still work locally if the profile update is unavailable.
   }
 
+  response.headers.set("Cache-Control", "no-store, max-age=0");
   return response;
 }

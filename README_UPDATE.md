@@ -1,13 +1,9 @@
-# Обновление 4.3
+# Update 4.3.1
 
-- полная пользовательская локализация RU/EN с переключателем языка;
-- язык сохраняется в профиле и применяется на публичных страницах;
-- шесть тем: Шалфей, Роза, Лаванда, Океан, Небо и Мёд;
-- три варианта типографики: Современный, Мягкий и Классический;
-- тема и типографика сохраняются в профиле и применяются на любом устройстве после входа;
-- системные категории расходов локализуются, пользовательские сохраняют введённое автором название;
-- контакты разработчика теперь заметно показаны и на лендинге, и в профиле: Telegram @kemisayega и ekaterina.pyshkova@gmail.com;
-- RUB поддерживается как валюта отдельной цели; мультивалютный пересчёт остаётся следующим отдельным финансовым этапом;
-- добавлены unit-тесты локализации и настроек.
+Fixes language persistence and cross-page consistency. No SQL migration and no new npm dependencies are required.
 
-Нужна миграция `202609010001_profile_preferences.sql` в dev и production Supabase. Новых npm-зависимостей нет.
+Rules:
+- for signed-in users, the locale saved in the profile is the single source of truth on every authenticated page;
+- on the first visit/setup, English is selected only when the browser/system language is English; otherwise Russian is used;
+- manual switching persists the choice to both the profile and browser cookie;
+- switching performs a full navigation to clear stale Next.js route state, so one page cannot remain in the previous language.
