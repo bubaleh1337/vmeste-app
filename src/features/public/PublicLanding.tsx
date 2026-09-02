@@ -1,17 +1,18 @@
 import Link from "next/link";
-import { APP_NAME, SUPPORT_DONATION_URL, SUPPORT_EMAIL, SUPPORT_TELEGRAM_LABEL, SUPPORT_TELEGRAM_URL } from "@/lib/config";
+import { localizedAppName, SUPPORT_DONATION_URL, SUPPORT_EMAIL, SUPPORT_TELEGRAM_LABEL, SUPPORT_TELEGRAM_URL } from "@/lib/config";
 import { tr, type AppLocale } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/features/preferences/LanguageSwitcher";
 import { BrandMark } from "@/features/public/BrandMark";
 
 export function PublicLanding({ locale }: { locale: AppLocale }) {
+  const appName = localizedAppName(locale);
   return (
     <main className="public-landing">
       <section className="public-hero">
         <div className="public-hero-copy">
           <div className="public-locale-row"><BrandMark large /><LanguageSwitcher locale={locale} /></div>
           <span className="eyebrow">{tr(locale, "Совместные накопления без лишнего шума", "Shared savings without the clutter")}</span>
-          <h1>{APP_NAME}</h1>
+          <h1>{appName}</h1>
           <p>{tr(locale, "Общие цели, понятный прогресс и отдельная аналитика расходов. Расходы помогают увидеть, сколько можно было бы отложить, но никогда не уменьшают накопленную сумму.", "Shared goals, clear progress and separate expense analytics. Expenses show what you could have saved but never reduce your saved balance.")}</p>
           <div className="public-hero-actions">
             <Link className="primary-button auth-link" href="/login">{tr(locale, "Войти через Google", "Continue with Google")}</Link>
@@ -39,18 +40,18 @@ export function PublicLanding({ locale }: { locale: AppLocale }) {
       <section className="public-section support-spotlight" id="support">
         <span className="eyebrow">{tr(locale, "Разработчик и поддержка", "Developer & support")}</span>
         <h2>{tr(locale, "Связаться или поддержать проект", "Contact or support the project")}</h2>
-        <p>{tr(locale, "Я развиваю приложение и читаю обратную связь сама. Можно написать мне или добровольно поддержать дальнейшее развитие «Вместе».", "I build the app and read feedback myself. You can contact me or voluntarily support the continued development of Vmeste.")}</p>
+        <p>{tr(locale, `Я развиваю приложение и читаю обратную связь сама. Можно написать мне или добровольно поддержать дальнейшее развитие «${appName}».`, `I build the app and read feedback myself. You can contact me or voluntarily support the continued development of ${appName}.`)}</p>
         <div className="support-contact-row">
           <a className="panel" href={SUPPORT_TELEGRAM_URL} target="_blank" rel="noreferrer"><strong>Telegram · {SUPPORT_TELEGRAM_LABEL}</strong><small>{tr(locale, "Открыть Telegram", "Open Telegram")}</small></a>
           <a className="panel" href={`mailto:${SUPPORT_EMAIL}`}><strong>{SUPPORT_EMAIL}</strong><small>{tr(locale, "Написать письмо", "Send email")}</small></a>
           <a className="panel support-donation-card" href={SUPPORT_DONATION_URL} target="_blank" rel="noopener noreferrer">
-            <span><span className="eyebrow">Buy Me a Coffee</span><strong>{tr(locale, "Поддержать «Вместе»", "Support Vmeste")}</strong><small>{tr(locale, "Любая разовая сумма на развитие приложения", "Any one-time amount toward the app's development")}</small></span>
+            <span><span className="eyebrow">Buy Me a Coffee</span><strong>{tr(locale, `Поддержать «${appName}»`, `Support ${appName}`)}</strong><small>{tr(locale, "Любая разовая сумма на развитие приложения", "Any one-time amount toward the app's development")}</small></span>
             <span className="support-donation-action">{tr(locale, "Поддержать →", "Support →")}</span>
           </a>
         </div>
       </section>
 
-      <footer className="public-footer"><span>{APP_NAME}</span><nav aria-label={tr(locale, "Правовая информация", "Legal information")}><Link href="/privacy">{tr(locale, "Конфиденциальность", "Privacy")}</Link><Link href="/terms">{tr(locale, "Условия использования", "Terms")}</Link><Link href="/support">{tr(locale, "Помощь и обратная связь", "Help & feedback")}</Link></nav></footer>
+      <footer className="public-footer"><span>{appName}</span><nav aria-label={tr(locale, "Правовая информация", "Legal information")}><Link href="/privacy">{tr(locale, "Конфиденциальность", "Privacy")}</Link><Link href="/terms">{tr(locale, "Условия использования", "Terms")}</Link><Link href="/support">{tr(locale, "Помощь и обратная связь", "Help & feedback")}</Link></nav></footer>
     </main>
   );
 }

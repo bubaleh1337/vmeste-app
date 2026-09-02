@@ -1,13 +1,14 @@
 import type { MetadataRoute } from "next";
-import { APP_NAME } from "@/lib/config";
+import { localizedAppName } from "@/lib/config";
 import { getCookieLocale } from "@/lib/i18n/server";
 import { tr } from "@/lib/i18n";
 
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
   const locale = await getCookieLocale();
+  const appName = localizedAppName(locale);
   return {
-    name: APP_NAME,
-    short_name: APP_NAME,
+    name: appName,
+    short_name: appName,
     description: tr(locale, "Совместные накопления и отдельная аналитика расходов", "Shared savings with separate expense analytics"),
     start_url: "/",
     display: "standalone",

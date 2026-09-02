@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { APP_NAME } from "@/lib/config";
+import { localizedAppName } from "@/lib/config";
 import { BrandMark } from "@/features/public/BrandMark";
 import { LanguageSwitcher } from "@/features/preferences/LanguageSwitcher";
 import { tr } from "@/lib/i18n";
@@ -26,5 +26,5 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   if (data?.claims) redirect(next);
   const googleUrl = new URLSearchParams({ next }).toString();
 
-  return <main className="auth-page"><section className="auth-card"><div className="auth-card-top"><BrandMark large /><LanguageSwitcher locale={locale} /></div><span className="eyebrow">{tr(locale,"Добро пожаловать","Welcome")}</span><h1>{APP_NAME}</h1><p>{tr(locale,"Совместные накопления и отдельная аналитика расходов — без банковских паролей и смешивания денег.","Shared savings and separate expense analytics — without bank passwords or mixing the two balances.")}</p>{params.error && <p className="form-error" role="alert">{errorText[params.error] ?? tr(locale,"Не удалось выполнить вход.","Could not sign in.")}</p>}<a className="primary-button auth-link" href={`/auth/google?${googleUrl}`}>{tr(locale,"Продолжить с Google","Continue with Google")}</a><small>{tr(locale,"Приложение не создаёт и не хранит собственные пароли.","The app does not create or store its own passwords.")}</small><div className="auth-legal-links"><Link href="/privacy">{tr(locale,"Конфиденциальность","Privacy")}</Link><Link href="/terms">{tr(locale,"Условия использования","Terms")}</Link><Link href="/support">{tr(locale,"Поддержка","Support")}</Link></div></section></main>;
+  return <main className="auth-page"><section className="auth-card"><div className="auth-card-top"><BrandMark large /><LanguageSwitcher locale={locale} /></div><span className="eyebrow">{tr(locale,"Добро пожаловать","Welcome")}</span><h1>{localizedAppName(locale)}</h1><p>{tr(locale,"Совместные накопления и отдельная аналитика расходов — без банковских паролей и смешивания денег.","Shared savings and separate expense analytics — without bank passwords or mixing the two balances.")}</p>{params.error && <p className="form-error" role="alert">{errorText[params.error] ?? tr(locale,"Не удалось выполнить вход.","Could not sign in.")}</p>}<a className="primary-button auth-link" href={`/auth/google?${googleUrl}`}>{tr(locale,"Продолжить с Google","Continue with Google")}</a><small>{tr(locale,"Приложение не создаёт и не хранит собственные пароли.","The app does not create or store its own passwords.")}</small><div className="auth-legal-links"><Link href="/privacy">{tr(locale,"Конфиденциальность","Privacy")}</Link><Link href="/terms">{tr(locale,"Условия использования","Terms")}</Link><Link href="/support">{tr(locale,"Поддержка","Support")}</Link></div></section></main>;
 }

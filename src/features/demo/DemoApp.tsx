@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { APP_NAME } from "@/lib/config";
+import { localizedAppName } from "@/lib/config";
 import { BrandMark } from "@/features/public/BrandMark";
 import { ru } from "@/lib/i18n/ru";
 import {
@@ -103,7 +103,7 @@ export function DemoApp() {
       <aside className="sidebar" aria-label="Основная навигация">
         <button className="brand" onClick={() => navigate("goals")} aria-label="Мои цели">
           <BrandMark />
-          <span className="brand-text">{APP_NAME}</span>
+          <span className="brand-text">{localizedAppName("ru")}</span>
         </button>
         <nav className="side-nav">
           <NavButton active={view === "goals"} onClick={() => navigate("goals")} icon="goals" label={ru.nav.goals} />
@@ -121,7 +121,7 @@ export function DemoApp() {
 
       <main className="main-content">
         <header className="mobile-header">
-          <button className="mobile-brand" onClick={() => navigate("goals")}>{APP_NAME}</button>
+          <button className="mobile-brand" onClick={() => navigate("goals")}>{localizedAppName("ru")}</button>
           <span className="demo-chip">ДЕМО</span>
         </header>
 

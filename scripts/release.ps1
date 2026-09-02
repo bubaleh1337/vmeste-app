@@ -26,7 +26,9 @@ Write-Host "2/3 Review changes"
 Invoke-Step "git" @("status", "--short")
 Invoke-Step "git" @("diff", "--check")
 
-$secretFiles = git status --porcelain | Select-String -Pattern '(^|\s)(\.env($|\.)|.*\.env\.local$|\.vercel[\\/])'
+$secretFiles = git status --porcelain |
+  Select-String -Pattern '(^|\s)(\.env($|\.)|.*\.env\.local$|\.vercel[\\/])' |
+  Where-Object { $_.Line -notmatch '(^|\s)\.env\.example$' }
 if ($secretFiles) {
   throw "Potential secret/local environment file is visible to Git. Stop and review .gitignore before committing."
 }

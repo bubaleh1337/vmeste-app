@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { APP_NAME } from "@/lib/config";
+import { localizedAppName } from "@/lib/config";
 import { tr } from "@/lib/i18n";
 import { getCookiePreferences } from "@/lib/i18n/server";
 import { allowSearchIndexing } from "@/lib/supabase/config";
@@ -10,8 +10,9 @@ const indexingEnabled = allowSearchIndexing();
 
 export async function generateMetadata(): Promise<Metadata> {
   const { locale } = await getCookiePreferences();
+  const appName = localizedAppName(locale);
   return {
-    title: tr(locale, `${APP_NAME} — совместные накопления`, `${APP_NAME} — shared savings`),
+    title: tr(locale, `${appName} — совместные накопления`, `${appName} — shared savings`),
     description: tr(locale, "Совместные накопления на цели и отдельная аналитика расходов.", "Shared savings goals with separate expense analytics."),
     icons: {
       icon: [

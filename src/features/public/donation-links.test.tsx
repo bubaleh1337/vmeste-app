@@ -29,6 +29,15 @@ describe("Buy Me a Coffee links", () => {
     expectSafeDonationLink(screen.getByRole("link", { name: /Поддержать «Вместе»/ }));
   });
 
+  it("uses the English product name on the English landing", () => {
+    render(<PublicLanding locale="en" />);
+
+    expect(screen.getByRole("heading", { level: 1, name: "Together" })).toBeInTheDocument();
+    expectSafeDonationLink(screen.getByRole("link", { name: /Support Together/ }));
+    expect(screen.queryByText("Вместе")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Vmeste/)).not.toBeInTheDocument();
+  });
+
   it("shows the same support link on the help page", async () => {
     render(await SupportPage());
 

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createGoalAction } from "@/app/actions";
 import { LanguageSwitcher } from "@/features/preferences/LanguageSwitcher";
 import { PreferenceSync } from "@/features/preferences/PreferenceSync";
-import { APP_NAME } from "@/lib/config";
+import { localizedAppName } from "@/lib/config";
 import { localeTag, tr } from "@/lib/i18n";
 import { formatMoney } from "@/lib/money";
 import type { LiveGoalSummary, LiveProfile } from "./types";
@@ -13,7 +13,7 @@ export function LiveHome({ profile, goals, error }: { profile: LiveProfile; goal
   return (
     <div className="live-shell">
       <PreferenceSync locale={profile.locale} theme={profile.theme} font={profile.font} />
-      <header className="live-topbar"><div><span className="eyebrow">{APP_NAME}</span><strong>{profile.displayName}</strong></div><div className="topbar-actions"><LanguageSwitcher locale={locale} /><Link className="text-button topbar-link" href="/support">{tr(locale,"Помощь","Help")}</Link><Link className="text-button topbar-link" href="/profile">{tr(locale,"Профиль","Profile")}</Link><form action="/auth/signout" method="post"><button className="text-button" type="submit">{tr(locale,"Выйти","Sign out")}</button></form></div></header>
+      <header className="live-topbar"><div><span className="eyebrow">{localizedAppName(locale)}</span><strong>{profile.displayName}</strong></div><div className="topbar-actions"><LanguageSwitcher locale={locale} /><Link className="text-button topbar-link" href="/support">{tr(locale,"Помощь","Help")}</Link><Link className="text-button topbar-link" href="/profile">{tr(locale,"Профиль","Profile")}</Link><form action="/auth/signout" method="post"><button className="text-button" type="submit">{tr(locale,"Выйти","Sign out")}</button></form></div></header>
 
       <main className="live-main"><section className="page-section compact-page">
         <div className="page-heading simplified-heading"><span className="eyebrow">{tr(locale,"Совместные накопления","Shared savings")}</span><h1>{tr(locale,"Мои цели","My goals")}</h1></div>

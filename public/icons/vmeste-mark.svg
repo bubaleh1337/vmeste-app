@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
-  <title id="title">Вместе</title>
-  <desc id="desc">Две соединённые округлые формы как символ общей цели</desc>
+  <title id="title">Вместе / Together</title>
+  <desc id="desc">Two connected rounded shapes representing a shared goal</desc>
   <rect width="512" height="512" rx="112" fill="#f7f4ee"/>
   <rect x="76" y="176" width="236" height="160" rx="80" fill="none" stroke="#53624f" stroke-width="58"/>
   <rect x="200" y="176" width="236" height="160" rx="80" fill="none" stroke="#b1846f" stroke-width="58"/>

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LanguageSwitcher } from "@/features/preferences/LanguageSwitcher";
 import { PreferenceSync } from "@/features/preferences/PreferenceSync";
-import { APP_NAME } from "@/lib/config";
+import { localizedAppName } from "@/lib/config";
 import { tr } from "@/lib/i18n";
 import { resolveAuthenticatedLocale } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
@@ -29,7 +29,7 @@ export default async function InvitePage({ params, searchParams }: { params: Pro
 
   if (error || !row) {
     return (
-      <main className="auth-page"><PreferenceSync locale={locale} theme={profile.theme} font={profile.font} /><section className="auth-card"><div className="auth-card-top"><span className="eyebrow">{APP_NAME}</span><LanguageSwitcher locale={locale} /></div><h1>{tr(locale, "Ссылка больше не действует", "This link is no longer valid")}</h1><p>{tr(locale, "Она могла истечь, быть отозвана или уже использована.", "It may have expired, been revoked or already been used.")}</p><Link className="secondary-button auth-link" href="/">{tr(locale, "Перейти к моим целям", "Go to my goals")}</Link></section></main>
+      <main className="auth-page"><PreferenceSync locale={locale} theme={profile.theme} font={profile.font} /><section className="auth-card"><div className="auth-card-top"><span className="eyebrow">{localizedAppName(locale)}</span><LanguageSwitcher locale={locale} /></div><h1>{tr(locale, "Ссылка больше не действует", "This link is no longer valid")}</h1><p>{tr(locale, "Она могла истечь, быть отозвана или уже использована.", "It may have expired, been revoked or already been used.")}</p><Link className="secondary-button auth-link" href="/">{tr(locale, "Перейти к моим целям", "Go to my goals")}</Link></section></main>
     );
   }
 
