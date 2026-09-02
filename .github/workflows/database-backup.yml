@@ -82,7 +82,7 @@ jobs:
         run: rm -rf backup
 
       - name: Upload encrypted backup
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: vmeste-db-backup-${{ github.run_number }}
           path: ${{ steps.encrypt.outputs.archive }}
