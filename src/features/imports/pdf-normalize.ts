@@ -180,7 +180,6 @@ function parseHalykAccountRows(
             if (amountToken[0].length === 0) trailingAmounts.lastIndex += 1;
           }
 
-          const credit = values[0] ?? null;
           const debit = values[1] ?? null;
           const operationAmount = normalizedAmount(operationAmountMatch[2], operationAmountMatch[1]);
 

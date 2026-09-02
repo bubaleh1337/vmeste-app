@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { APP_NAME, SUPPORT_EMAIL, SUPPORT_TELEGRAM_LABEL, SUPPORT_TELEGRAM_URL } from "@/lib/config";
+import { APP_NAME, SUPPORT_DONATION_URL, SUPPORT_EMAIL, SUPPORT_TELEGRAM_LABEL, SUPPORT_TELEGRAM_URL } from "@/lib/config";
 import { tr, type AppLocale } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/features/preferences/LanguageSwitcher";
 import { BrandMark } from "@/features/public/BrandMark";
@@ -38,11 +38,15 @@ export function PublicLanding({ locale }: { locale: AppLocale }) {
 
       <section className="public-section support-spotlight" id="support">
         <span className="eyebrow">{tr(locale, "Разработчик и поддержка", "Developer & support")}</span>
-        <h2>{tr(locale, "Есть вопрос или идея?", "Question or idea?")}</h2>
-        <p>{tr(locale, "Я развиваю приложение и читаю обратную связь сама. Напиши мне удобным способом.", "I build the app and read feedback myself. Reach me through whichever channel is easier.")}</p>
+        <h2>{tr(locale, "Связаться или поддержать проект", "Contact or support the project")}</h2>
+        <p>{tr(locale, "Я развиваю приложение и читаю обратную связь сама. Можно написать мне или добровольно поддержать дальнейшее развитие «Вместе».", "I build the app and read feedback myself. You can contact me or voluntarily support the continued development of Vmeste.")}</p>
         <div className="support-contact-row">
           <a className="panel" href={SUPPORT_TELEGRAM_URL} target="_blank" rel="noreferrer"><strong>Telegram · {SUPPORT_TELEGRAM_LABEL}</strong><small>{tr(locale, "Открыть Telegram", "Open Telegram")}</small></a>
           <a className="panel" href={`mailto:${SUPPORT_EMAIL}`}><strong>{SUPPORT_EMAIL}</strong><small>{tr(locale, "Написать письмо", "Send email")}</small></a>
+          <a className="panel support-donation-card" href={SUPPORT_DONATION_URL} target="_blank" rel="noopener noreferrer">
+            <span><span className="eyebrow">Buy Me a Coffee</span><strong>{tr(locale, "Поддержать «Вместе»", "Support Vmeste")}</strong><small>{tr(locale, "Любая разовая сумма на развитие приложения", "Any one-time amount toward the app's development")}</small></span>
+            <span className="support-donation-action">{tr(locale, "Поддержать →", "Support →")}</span>
+          </a>
         </div>
       </section>
 
