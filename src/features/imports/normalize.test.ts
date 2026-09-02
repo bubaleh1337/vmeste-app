@@ -1,0 +1,125 @@
+import { describe, expect, it } from "vitest";
+import { detectImportMapping, detectSavingsStatementCurrency, detectStatementSource, maskProbableFinancialNumbers, parseDelimitedText, parseImportAmount, parseImportDate, prepareRows } from "./normalize";
+
+const baseMapping = {
+  headerRow: 1,
+  dateColumn: 0,
+  descriptionColumn: 1,
+  amountMode: "signed" as const,
+  amountColumn: 2,
+  debitColumn: -1,
+  creditColumn: -1,
+  typeColumn: -1,
+  externalIdColumn: -1,
+  dateFormat: "dd.mm.yyyy" as const,
+  decimalSeparator: "comma" as const,
+  expenseSign: "negative" as const,
+  participantUserId: "00000000-0000-4000-8000-000000000001",
+  categoryId: "00000000-0000-4000-8000-000000000002",
+  isDiscretionary: false,
+  analyticsStatus: "included" as const,
+};
+
+describe("import normalization", () => {
+  it("parses quoted semicolon CSV", () => {
+    expect(parseDelimitedText('Дата;Описание;Сумма\n31.08.2026;"Кафе; центр";-1 234,50')).toEqual([
+      ["Дата", "Описание", "Сумма"],
+      ["31.08.2026", "Кафе; центр", "-1 234,50"],
+    ]);
+  });
+
+  it("parses money to integer minor units without float storage", () => {
+    expect(parseImportAmount("1 234,50 ₸", "comma")).toBe(123450n);
+    expect(parseImportAmount("(2 000,00)", "comma")).toBe(-200000n);
+  });
+
+  it("rejects impossible dates", () => {
+    expect(parseImportDate("31.02.2026", "dd.mm.yyyy")).toBeNull();
+    expect(parseImportDate("31.08.2026", "dd.mm.yyyy")).toBe("2026-08-31");
+  });
+
+  it("turns negative bank debits into positive expenses", () => {
+    const rows = prepareRows([
+      ["Дата", "Описание", "Сумма"],
+      ["31.08.2026", "MAGNUM", "-12 500,00"],
+    ], "expenses", baseMapping);
+    expect(rows[0].amountMinor).toBe("1250000");
+    expect(rows[0].errorCode).toBeNull();
+  });
+
+  it("maps negative savings amounts to withdrawals", () => {
+    const rows = prepareRows([
+      ["Дата", "Описание", "Сумма"],
+      ["31.08.2026", "Снятие", "-5 000,00"],
+    ], "savings", baseMapping);
+    expect(rows[0].amountMinor).toBe("500000");
+    expect(rows[0].savingsType).toBe("withdrawal");
+  });
+
+  it("detects ordinary expense CSV columns and sign automatically", () => {
+    const rows = [
+      ["Дата", "Описание", "Сумма"],
+      ["31.08.2026", "MAGNUM", "-12 500,00"],
+      ["31.08.2026", "Кофе", "-1 800,00"],
+    ];
+    const result = detectImportMapping(rows, baseMapping, "expenses");
+    expect(result.confident).toBe(true);
+    expect(result.mapping).toMatchObject({
+      headerRow: 1,
+      dateColumn: 0,
+      descriptionColumn: 1,
+      amountColumn: 2,
+      expenseSign: "negative",
+    });
+  });
+
+
+  it("detects EUR from the real-style Halyk savings CSV and preserves cents", () => {
+    const rows = parseDelimitedText([
+      "date,description,amount,type,currency",
+      "2025-08-01,Дополнительный взнос,16.06,пополнение,EUR",
+      "2025-09-02,Выплата вознаграждения,0.23,проценты,EUR",
+    ].join("\n"));
+    const currency = detectSavingsStatementCurrency(rows, "KZT");
+    const detected = detectImportMapping(rows, baseMapping, "savings");
+    const prepared = prepareRows(rows, "savings", detected.mapping, currency);
+
+    expect(currency).toBe("EUR");
+    expect(detected.mapping.decimalSeparator).toBe("auto");
+    expect(prepared[0].amountMinor).toBe("1606");
+    expect(prepared[0].currencyCode).toBe("EUR");
+    expect(prepared[1].amountMinor).toBe("23");
+  });
+
+  it("detects optional transaction IDs and bank/account scope without requiring a bank-specific format", () => {
+    const rows = [
+      ["Transaction date", "Description", "Amount", "Transaction ID"],
+      ["2026-09-01", "Transfer", "100.00", "ABC-12345"],
+      ["Bank: Freedom Bank", "IBAN: KZ000000000000000000"],
+    ];
+    const detected = detectImportMapping(rows, baseMapping, "savings");
+    const source = detectStatementSource(rows, "statement.pdf");
+    expect(detected.mapping.externalIdColumn).toBe(3);
+    expect(source.provider).toBe("freedom");
+    expect(source.accountHint).toBe("KZ000000000000000000");
+  });
+
+  it("prefers the statement issuer over another bank mentioned inside a transaction", () => {
+    const source = detectStatementSource([
+      ["АО Отбасы банк"],
+      ["Депозит: KZ000000000000000000"],
+      ["Внесение денег принятые от АО Kaspi bank"],
+    ], "statement.pdf");
+    expect(source.provider).toBe("otbasy");
+    expect(source.accountHint).toBe("KZ000000000000000000");
+  });
+
+  it("recognizes Kaspi source while keeping unknown banks on the generic path", () => {
+    expect(detectStatementSource([["Kaspi Gold statement"]], "kaspi.pdf").provider).toBe("kaspi");
+    expect(detectStatementSource([["Acme Credit Union statement"]], "statement.pdf").provider).toBeNull();
+  });
+
+  it("masks probable card or account numbers in preview", () => {
+    expect(maskProbableFinancialNumbers("Перевод 4400 1234 5678 9012 магазин")).toContain("4400 •••• •••• 9012");
+  });
+});
