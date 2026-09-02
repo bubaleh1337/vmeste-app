@@ -1,0 +1,90 @@
+name: Encrypted database backup
+
+on:
+  schedule:
+    # Every Sunday at 06:00 in Kazakhstan (UTC+5).
+    - cron: "0 1 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: encrypted-database-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: Create encrypted Supabase dump
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      BACKUP_ENCRYPTION_PASSWORD: ${{ secrets.BACKUP_ENCRYPTION_PASSWORD }}
+
+    steps:
+      - name: Check required secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          for secret_name in \
+            SUPABASE_ACCESS_TOKEN \
+            SUPABASE_DB_PASSWORD \
+            SUPABASE_PROJECT_REF \
+            BACKUP_ENCRYPTION_PASSWORD
+          do
+            if [ -z "${!secret_name:-}" ]; then
+              echo "Required GitHub Actions secret is missing: ${secret_name}"
+              exit 1
+            fi
+          done
+
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v3
+        with:
+          version: 2.116.0
+
+      - name: Link production database
+        shell: bash
+        run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
+
+      - name: Create schema and data dumps
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p backup
+          supabase db dump --linked --file backup/schema.sql
+          supabase db dump --linked --data-only --use-copy --file backup/data.sql
+          supabase db dump --linked --role-only --file backup/roles.sql
+          test -s backup/schema.sql
+          test -s backup/data.sql
+
+      - name: Encrypt backup
+        id: encrypt
+        shell: bash
+        run: |
+          set -euo pipefail
+          timestamp="$(date -u +'%Y-%m-%dT%H-%M-%SZ')"
+          archive="vmeste-db-backup-${timestamp}.7z"
+          7z a -t7z -mhe=on -p"$BACKUP_ENCRYPTION_PASSWORD" "$archive" ./backup/ >/dev/null
+          test -s "$archive"
+          echo "archive=$archive" >> "$GITHUB_OUTPUT"
+
+      - name: Remove unencrypted dump
+        if: always()
+        shell: bash
+        run: rm -rf backup
+
+      - name: Upload encrypted backup
+        uses: actions/upload-artifact@v4
+        with:
+          name: vmeste-db-backup-${{ github.run_number }}
+          path: ${{ steps.encrypt.outputs.archive }}
+          if-no-files-found: error
+          retention-days: 60
