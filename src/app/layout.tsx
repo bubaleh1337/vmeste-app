@@ -4,6 +4,7 @@ import { APP_NAME } from "@/lib/config";
 import { tr } from "@/lib/i18n";
 import { getCookiePreferences } from "@/lib/i18n/server";
 import { allowSearchIndexing } from "@/lib/supabase/config";
+import { AuthSessionKeeper } from "@/features/auth/AuthSessionKeeper";
 
 const indexingEnabled = allowSearchIndexing();
 
@@ -28,6 +29,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html lang={locale} data-theme={theme} data-font={font}>
       <body>
+        <AuthSessionKeeper />
         <a className="skip-link" href="#main-content">{tr(locale, "Перейти к содержимому", "Skip to content")}</a>
         <div id="main-content">{children}</div>
       </body>

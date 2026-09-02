@@ -2,6 +2,7 @@ import type { CurrencyCode } from "@/lib/money";
 import type { ImportTargetKind } from "./types";
 import { parsePdfStatementLines, type PdfStatementParseResult } from "./pdf-normalize";
 import { detectStatementSource } from "./normalize";
+import { installPdfBrowserCompatibility } from "./pdf-browser-compat";
 
 type PdfTextItem = { str: string; transform: number[]; width?: number };
 
@@ -37,6 +38,7 @@ export async function extractPdfStatement(
   targetKind: ImportTargetKind,
   fallbackCurrency: CurrencyCode,
 ): Promise<PdfStatementParseResult> {
+  installPdfBrowserCompatibility();
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
   pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
   const loadingTask = pdfjs.getDocument({ data: new Uint8Array(buffer) });
