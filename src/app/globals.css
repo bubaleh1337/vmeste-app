@@ -256,7 +256,16 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .back-link { color: var(--sage-dark); text-decoration: none; font-weight: 720; }
 
 .live-goal-grid { display: grid; gap: 12px; }
-.live-goal-card { text-decoration: none; color: inherit; }
+.live-goal-card { padding: 0; overflow: hidden; color: inherit; }
+.live-goal-main-link { display: block; padding: 22px; color: inherit; text-decoration: none; }
+.goal-progress-copy { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 30px; }
+.goal-progress-copy strong { font-size: 26px; font-variant-numeric: tabular-nums; letter-spacing: -.035em; }
+.goal-progress-copy span, .goal-saved-row, .live-goal-fx-note { color: var(--muted); font-size: 12px; }
+.live-goal-progress { margin-top: 9px; }
+.goal-saved-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 9px; }
+.goal-saved-row span:first-child { color: var(--text); font-weight: 720; font-variant-numeric: tabular-nums; }
+.live-goal-add-button { width: calc(100% - 44px); margin: 0 22px 22px; display: flex; align-items: center; justify-content: center; text-align: center; text-decoration: none; }
+.live-goal-fx-note { display: block; margin: -10px 22px 18px; line-height: 1.4; }
 .empty-state { padding: 28px 0 8px; max-width: 520px; }
 .empty-state strong { font-size: 20px; }
 .empty-state p { color: var(--muted); line-height: 1.5; }
@@ -635,6 +644,8 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .compact-detail-title { margin-bottom: 12px; }
 .detail-actions-row { display: flex; align-items: flex-start; flex-wrap: wrap; gap: 10px; margin: 14px 0 6px; }
 .compact-action-details { flex: 1 1 320px; margin-top: 0; }
+.prominent-action-details > summary { min-height: 42px; display: flex; align-items: center; justify-content: center; padding: 8px 12px; border: 1px solid var(--sage-dark); border-radius: 12px; background: var(--sage-dark); color: white; text-align: center; }
+.prominent-action-details[open] > summary { margin-bottom: 12px; }
 .compact-link-button { min-height: 38px; display: inline-flex; align-items: center; text-decoration: none; padding: 7px 11px; }
 .detail-invariant { margin-top: 14px; }
 .overview-members-section { margin-top: 18px; padding-top: 24px; padding-bottom: 22px; }
@@ -663,6 +674,14 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
   .collapsible-overview-section > summary { grid-template-columns: 1fr 18px; }
   .collapsible-overview-section > summary > small { grid-column: 1; grid-row: 2; margin-top: -8px; }
   .collapsible-overview-section > summary::after { grid-column: 2; grid-row: 1 / span 2; }
+}
+
+@media (max-width: 620px) {
+  .live-topbar { gap: 8px; padding-inline: 12px; }
+  .live-topbar > div:first-child { min-width: 0; }
+  .live-topbar > div:first-child .eyebrow { max-width: 112px; line-height: 1.25; }
+  .topbar-actions { flex-wrap: wrap; justify-content: flex-end; }
+  .live-topbar .text-button { min-height: 38px; padding-inline: 7px; font-size: 12px; }
 }
 
 /* Stage 4.0: closed-test release shell, public pages and profile/export. */

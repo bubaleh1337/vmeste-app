@@ -26,14 +26,14 @@ describe("Buy Me a Coffee links", () => {
   it("shows a safe external support link on the public landing", () => {
     render(<PublicLanding locale="ru" />);
 
-    expectSafeDonationLink(screen.getByRole("link", { name: /Поддержать «Вместе»/ }));
+    expectSafeDonationLink(screen.getByRole("link", { name: /Поддержать «Копим вместе»/ }));
   });
 
   it("uses the English product name on the English landing", () => {
     render(<PublicLanding locale="en" />);
 
-    expect(screen.getByRole("heading", { level: 1, name: "Together" })).toBeInTheDocument();
-    expectSafeDonationLink(screen.getByRole("link", { name: /Support Together/ }));
+    expect(screen.getByRole("heading", { level: 1, name: "Saving Together" })).toBeInTheDocument();
+    expectSafeDonationLink(screen.getByRole("link", { name: /Support Saving Together/ }));
     expect(screen.queryByText("Вместе")).not.toBeInTheDocument();
     expect(screen.queryByText(/Vmeste/)).not.toBeInTheDocument();
   });
@@ -41,7 +41,7 @@ describe("Buy Me a Coffee links", () => {
   it("shows the same support link on the help page", async () => {
     render(await SupportPage());
 
-    expectSafeDonationLink(screen.getByRole("link", { name: /Поддержать «Вместе»/ }));
+    expectSafeDonationLink(screen.getByRole("link", { name: /Поддержать «Копим вместе»/ }));
     expect(screen.getByText(/не получает данные карты/i)).toBeInTheDocument();
   });
 });

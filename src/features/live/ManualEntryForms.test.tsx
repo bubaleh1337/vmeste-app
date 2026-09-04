@@ -28,7 +28,7 @@ const category = {
 
 describe("manual entry forms", () => {
   it("confirms a saved savings entry next to the button and clears the amount", async () => {
-    render(<AddSavingForm goalId="goal-1" participants={[participant]} viewerUserId={participant.id} goalCurrency="KZT" locale="ru" defaultDate="2026-09-01" />);
+    render(<AddSavingForm goalId="goal-1" participants={[participant]} viewerUserId={participant.id} goalCurrency="KZT" currencyBalances={[{ currency: "KZT", amountMinor: 100_000n }]} locale="ru" defaultDate="2026-09-01" />);
 
     const amount = screen.getByRole("textbox", { name: "Сумма" });
     fireEvent.change(amount, { target: { value: "25000" } });
@@ -42,6 +42,16 @@ describe("manual entry forms", () => {
     fireEvent.change(screen.getByRole("textbox", { name: "Описание" }), { target: { value: "Следующее пополнение" } });
     await waitFor(() => expect(screen.queryByRole("status")).not.toBeInTheDocument());
     expect(screen.getByRole("button", { name: "Добавить" })).toBeInTheDocument();
+  });
+
+  it("only asks for confirmation when a negative adjustment would cross zero", () => {
+    render(<AddSavingForm goalId="goal-1" participants={[participant]} viewerUserId={participant.id} goalCurrency="KZT" currencyBalances={[{ currency: "KZT", amountMinor: 10_000n }]} locale="ru" defaultDate="2026-09-01" />);
+
+    expect(screen.queryByRole("checkbox", { name: /Подтверждаю отрицательную корректировку/ })).not.toBeInTheDocument();
+    fireEvent.change(screen.getByRole("combobox", { name: "Тип" }), { target: { value: "adjustment_minus" } });
+    fireEvent.change(screen.getByRole("textbox", { name: "Сумма" }), { target: { value: "101" } });
+
+    expect(screen.getByRole("checkbox", { name: /Подтверждаю отрицательную корректировку/ })).toBeRequired();
   });
 
   it("shows the same confirmation for a manually added expense", async () => {

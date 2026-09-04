@@ -2,13 +2,21 @@ import { createClient } from "@/lib/supabase/server";
 import type {
   LiveAuditEntry,
   LiveExpense,
+  LiveGoalCard,
   LiveGoalSnapshot,
   LiveGoalSummary,
   LiveParticipant,
   LiveProfile,
   LiveSaving,
 } from "@/features/live/types";
-import type { CurrencyCode, SavingsType } from "@/lib/money";
+import {
+  calculateProgressPercent,
+  signedSavingsAmount,
+  type CurrencyCode,
+  type SavingsType,
+} from "@/lib/money";
+import { convertMinorUnits } from "@/lib/fx";
+import { getOfficialFxRates } from "@/lib/fx/server";
 import type { AnalyticsStatus } from "@/features/demo/types";
 import { mergeCategorySettings, type ExpenseCategoryOverrideRow, type ExpenseCategoryRow, type ExpenseCategorySetting } from "@/features/expenses/category-settings";
 import { normalizeFont, normalizeLocale, normalizeTheme } from "@/lib/i18n";
@@ -81,7 +89,7 @@ export async function getCurrentProfile(userId: string): Promise<LiveProfile | n
   return { id: row.id, displayName: row.display_name, avatarUrl: row.avatar_url, timeZone: row.timezone, locale: normalizeLocale(row.locale), theme: normalizeTheme(row.theme_key), font: normalizeFont(row.font_key) };
 }
 
-export async function listGoals(userId: string): Promise<LiveGoalSummary[]> {
+export async function listGoals(userId: string): Promise<LiveGoalCard[]> {
   const supabase = await createClient();
   const [{ data: memberships, error: membershipError }, { data: goals, error: goalError }] = await Promise.all([
     supabase.from("goal_members").select("goal_id, user_id, role, status").eq("user_id", userId).eq("status", "active"),
@@ -94,18 +102,54 @@ export async function listGoals(userId: string): Promise<LiveGoalSummary[]> {
   const goalRows = (goals ?? []) as GoalReadRow[];
   const roles = new Map(membershipRows.map((row) => [row.goal_id, row.role]));
 
-  return goalRows
-    .filter((row) => roles.has(row.id))
-    .map((row) => ({
+  const visibleGoals = goalRows.filter((row) => roles.has(row.id));
+  if (!visibleGoals.length) return [];
+
+  const goalIds = visibleGoals.map((row) => row.id);
+  const { data: savings, error: savingsError } = await supabase
+    .from("savings_transactions_read")
+    .select("goal_id, type, amount_minor_text, currency_code")
+    .in("goal_id", goalIds)
+    .is("deleted_at", null);
+  if (savingsError) throw savingsError;
+
+  const goalCurrency = new Map(visibleGoals.map((row) => [row.id, currency(row.currency_code)]));
+  const savingsRows = (savings ?? []) as Pick<SavingsReadRow, "goal_id" | "type" | "amount_minor_text" | "currency_code">[];
+  const needsFx = savingsRows.some((row) => currency(row.currency_code) !== goalCurrency.get(row.goal_id));
+  const fxRates = needsFx ? await getOfficialFxRates() : null;
+  const totals = new Map<string, bigint>();
+  const incompleteGoals = new Set<string>();
+
+  for (const row of savingsRows) {
+    const targetCurrency = goalCurrency.get(row.goal_id);
+    if (!targetCurrency) continue;
+    const sourceCurrency = currency(row.currency_code);
+    const converted = convertMinorUnits(BigInt(row.amount_minor_text), sourceCurrency, targetCurrency, fxRates);
+    if (converted === null) {
+      incompleteGoals.add(row.goal_id);
+      continue;
+    }
+    const signed = signedSavingsAmount({ type: row.type, amountMinor: converted });
+    totals.set(row.goal_id, (totals.get(row.goal_id) ?? 0n) + signed);
+  }
+
+  return visibleGoals.map((row) => {
+    const actualSavedMinor = totals.get(row.id) ?? 0n;
+    const targetAmountMinor = BigInt(row.target_amount_minor_text);
+    return {
       id: row.id,
       ownerId: row.owner_id,
       title: row.title,
-      targetAmountMinor: BigInt(row.target_amount_minor_text),
+      targetAmountMinor,
       currencyCode: currency(row.currency_code),
       targetDate: row.target_date,
       status: row.status,
       role: roles.get(row.id) ?? "member",
-    }));
+      actualSavedMinor,
+      progressPercent: calculateProgressPercent(targetAmountMinor, actualSavedMinor),
+      progressIncomplete: incompleteGoals.has(row.id),
+    };
+  });
 }
 
 export async function getGoalSnapshot(goalId: string, userId: string): Promise<LiveGoalSnapshot | null> {

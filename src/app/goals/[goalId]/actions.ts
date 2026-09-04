@@ -105,6 +105,7 @@ export async function addSavingAction(goalId: string, previousState: ManualEntry
     negative_balance_confirmed: formData.get("negativeBalanceConfirmed") === "on",
   });
   if (error) fail(goalId, "saving_failed");
+  revalidatePath("/");
   revalidatePath(`/goals/${goalId}`);
   return { successCount: previousState.successCount + 1 };
 }
@@ -135,6 +136,7 @@ export async function updateSavingAction(goalId: string, savingId: string, formD
     negative_balance_confirmed: formData.get("negativeBalanceConfirmed") === "on",
   }).eq("id", savingId).eq("goal_id", goalId);
   if (error) fail(goalId, "saving_update_failed");
+  revalidatePath("/");
   revalidatePath(`/goals/${goalId}`);
 }
 
@@ -146,6 +148,7 @@ export async function softDeleteSavingAction(goalId: string, savingId: string) {
     updated_by: userId,
   }).eq("id", savingId).eq("goal_id", goalId).is("deleted_at", null);
   if (error) fail(goalId, "saving_delete_failed");
+  revalidatePath("/");
   revalidatePath(`/goals/${goalId}`);
 }
 
@@ -157,6 +160,7 @@ export async function restoreSavingAction(goalId: string, savingId: string) {
     updated_by: userId,
   }).eq("id", savingId).eq("goal_id", goalId).not("deleted_at", "is", null);
   if (error) fail(goalId, "saving_restore_failed");
+  revalidatePath("/");
   revalidatePath(`/goals/${goalId}`);
 }
 

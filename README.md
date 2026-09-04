@@ -30,8 +30,8 @@ Do this only after intentionally creating a Supabase project. Full steps are in 
 Set these values in `.env.local`:
 
 ```dotenv
-NEXT_PUBLIC_APP_NAME=Вместе
-NEXT_PUBLIC_APP_NAME_EN=Together
+NEXT_PUBLIC_APP_NAME=Копим вместе
+NEXT_PUBLIC_APP_NAME_EN=Saving Together
 NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
 NEXT_PUBLIC_APP_URL=http://localhost:3000

@@ -79,8 +79,8 @@ Supabase -> Authentication -> URL Configuration:
 Vercel -> Project -> Settings -> Environment Variables -> Production:
 
 ```text
-NEXT_PUBLIC_APP_NAME=Вместе
-NEXT_PUBLIC_APP_NAME_EN=Together
+NEXT_PUBLIC_APP_NAME=Копим вместе
+NEXT_PUBLIC_APP_NAME_EN=Saving Together
 NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 NEXT_PUBLIC_ALLOW_INDEXING=false

@@ -10,7 +10,7 @@ import type { ExpenseCategorySetting } from "@/features/expenses/category-settin
 import type { LiveParticipant } from "@/features/live/types";
 import { SUPPORTED_CURRENCIES } from "@/lib/fx";
 import { tr, type AppLocale } from "@/lib/i18n";
-import type { CurrencyCode, SavingsType } from "@/lib/money";
+import { parseMajorUnits, type CurrencyCode, type SavingsType } from "@/lib/money";
 
 const initialState: ManualEntryState = { successCount: 0 };
 
@@ -35,8 +35,15 @@ function savingLabels(locale: AppLocale): Record<SavingsType, string> {
   };
 }
 
-function useManualEntry(action: (state: ManualEntryState, formData: FormData) => Promise<ManualEntryState>) {
-  const [state, formAction, pending] = useActionState(action, initialState);
+function useManualEntry(
+  action: (state: ManualEntryState, formData: FormData) => Promise<ManualEntryState>,
+  onSuccess?: () => void,
+) {
+  const [state, formAction, pending] = useActionState(async (previousState: ManualEntryState, formData: FormData) => {
+    const nextState = await action(previousState, formData);
+    onSuccess?.();
+    return nextState;
+  }, initialState);
   const [dismissedCount, setDismissedCount] = useState(0);
   const formRef = useRef<HTMLFormElement>(null);
   const showSuccess = state.successCount > dismissedCount;
@@ -59,6 +66,7 @@ export function AddSavingForm({
   participants,
   viewerUserId,
   goalCurrency,
+  currencyBalances,
   locale,
   defaultDate,
 }: {
@@ -66,22 +74,33 @@ export function AddSavingForm({
   participants: LiveParticipant[];
   viewerUserId: string;
   goalCurrency: CurrencyCode;
+  currencyBalances: { currency: CurrencyCode; amountMinor: bigint }[];
   locale: AppLocale;
   defaultDate: string;
 }) {
   const action = addSavingAction.bind(null, goalId);
-  const { formAction, formRef, pending, showSuccess, dismissSuccess } = useManualEntry(action);
+  const [type, setType] = useState<SavingsType>("contribution");
+  const [amount, setAmount] = useState("");
+  const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>(goalCurrency);
+  const { formAction, formRef, pending, showSuccess, dismissSuccess } = useManualEntry(action, () => {
+    setType("contribution");
+    setAmount("");
+    setSelectedCurrency(goalCurrency);
+  });
   const labels = savingLabels(locale);
+  const amountMinor = parseMajorUnits(amount);
+  const currentBalance = currencyBalances.find((item) => item.currency === selectedCurrency)?.amountMinor ?? 0n;
+  const needsNegativeBalanceConfirmation = type === "adjustment_minus" && amountMinor !== null && amountMinor > currentBalance;
 
   return <form className="compact-form" action={formAction} ref={formRef} onChange={dismissSuccess}>
-    <label>{tr(locale,"Тип","Type")}<select name="type" defaultValue="contribution">{Object.entries(labels).map(([value,label])=><option value={value} key={value}>{label}</option>)}</select></label>
-    <label>{tr(locale,"Сумма","Amount")}<input name="amount" inputMode="decimal" required /></label>
-    <label>{tr(locale,"Валюта","Currency")}<select name="currencyCode" defaultValue={goalCurrency}>{SUPPORTED_CURRENCIES.map((currency)=><option value={currency} key={currency}>{currency} — {currencyName(currency,locale)}</option>)}</select></label>
+    <label>{tr(locale,"Тип","Type")}<select name="type" value={type} onChange={(event)=>setType(event.target.value as SavingsType)}>{Object.entries(labels).map(([value,label])=><option value={value} key={value}>{label}</option>)}</select></label>
+    <label>{tr(locale,"Сумма","Amount")}<input name="amount" inputMode="decimal" required value={amount} onChange={(event)=>setAmount(event.target.value)} /></label>
+    <label>{tr(locale,"Валюта","Currency")}<select name="currencyCode" value={selectedCurrency} onChange={(event)=>setSelectedCurrency(event.target.value as CurrencyCode)}>{SUPPORTED_CURRENCIES.map((currency)=><option value={currency} key={currency}>{currency} — {currencyName(currency,locale)}</option>)}</select></label>
     <label>{tr(locale,"Дата","Date")}<input name="transactionDate" type="date" required defaultValue={defaultDate} /></label>
     <label>{tr(locale,"Чей вклад","Contributor")}<select name="contributorUserId" defaultValue={viewerUserId}>{participants.map((participant)=><option value={participant.id} key={participant.id}>{participant.name}{participant.id===viewerUserId?tr(locale," (вы)"," (you)"):""}</option>)}</select></label>
     <label className="wide">{tr(locale,"Описание","Description")}<input name="description" maxLength={160} /></label>
     <label className="wide">{tr(locale,"Комментарий к корректировке","Adjustment note")}<input name="note" maxLength={500} placeholder={tr(locale,"Обязателен для корректировок","Required for adjustments")} /></label>
-    <label className="checkbox-label wide"><input type="checkbox" name="negativeBalanceConfirmed" /><span><strong>{tr(locale,"Подтверждаю отрицательную корректировку","Confirm negative adjustment")}</strong><small>{tr(locale,"Нужно только если корректировка − уводит баланс этой валюты ниже нуля.","Required only if a negative adjustment would take this currency balance below zero.")}</small></span></label>
+    {needsNegativeBalanceConfirmation&&<label className="checkbox-label wide negative-balance-confirmation"><input type="checkbox" name="negativeBalanceConfirmed" required /><span><strong>{tr(locale,"Подтверждаю отрицательную корректировку","Confirm negative adjustment")}</strong><small>{tr(locale,"Эта корректировка уведёт баланс выбранной валюты ниже нуля.","This adjustment will take the selected currency balance below zero.")}</small></span></label>}
     <div className="manual-entry-result wide">
       <button className={`primary-button${showSuccess ? " manual-entry-success-button" : ""}`} type="submit" disabled={pending}>{pending?tr(locale,"Добавляю…","Adding…"):showSuccess?tr(locale,"Добавлено ✓","Added ✓"):tr(locale,"Добавить","Add")}</button>
       {showSuccess&&<p className="manual-entry-success" role="status">{tr(locale,"Готово — накопление сохранено. Общая сумма уже обновлена.","Done — the savings transaction was saved. The total has already been updated.")}</p>}

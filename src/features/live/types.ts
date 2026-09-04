@@ -23,6 +23,12 @@ export interface LiveGoalSummary {
   role: "owner" | "member";
 }
 
+export interface LiveGoalCard extends LiveGoalSummary {
+  actualSavedMinor: bigint;
+  progressPercent: number;
+  progressIncomplete: boolean;
+}
+
 export interface LiveParticipant {
   id: string;
   name: string;
