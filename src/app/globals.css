@@ -258,10 +258,12 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .live-goal-grid { display: grid; gap: 12px; }
 .live-goal-card { padding: 0; overflow: hidden; color: inherit; }
 .live-goal-main-link { display: block; padding: 22px; color: inherit; text-decoration: none; }
-.goal-progress-copy { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 30px; }
-.goal-progress-copy strong { font-size: 26px; font-variant-numeric: tabular-nums; letter-spacing: -.035em; }
-.goal-progress-copy span, .goal-saved-row, .live-goal-fx-note { color: var(--muted); font-size: 12px; }
-.live-goal-progress { margin-top: 9px; }
+.goal-target-copy { display: grid; gap: 5px; margin-top: 30px; }
+.goal-target-copy span, .goal-progress-copy span, .goal-saved-row, .live-goal-fx-note { color: var(--muted); font-size: 12px; }
+.goal-target-copy strong { font-size: 26px; line-height: 1.08; font-variant-numeric: tabular-nums; letter-spacing: -.035em; }
+.goal-progress-copy { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 16px; }
+.goal-progress-copy strong { color: var(--sage-dark); font-size: 14px; font-variant-numeric: tabular-nums; }
+.live-goal-progress { margin-top: 7px; }
 .goal-saved-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 9px; }
 .goal-saved-row span:first-child { color: var(--text); font-weight: 720; font-variant-numeric: tabular-nums; }
 .live-goal-add-button { width: calc(100% - 44px); margin: 0 22px 22px; display: flex; align-items: center; justify-content: center; text-align: center; text-decoration: none; }
