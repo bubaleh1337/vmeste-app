@@ -1,6 +1,7 @@
 import type { AnalyticsStatus } from "@/features/demo/types";
 import type { CurrencyCode, SavingsType } from "@/lib/money";
 import type { AppLocale, FontKey, ThemeKey } from "@/lib/i18n";
+import type { ParticipantContribution } from "@/features/savings/participant-progress";
 
 export interface LiveProfile {
   id: string;
@@ -27,12 +28,14 @@ export interface LiveGoalCard extends LiveGoalSummary {
   actualSavedMinor: bigint;
   progressPercent: number;
   progressIncomplete: boolean;
+  participantContributions: ParticipantContribution[];
 }
 
 export interface LiveParticipant {
   id: string;
   name: string;
   role: "owner" | "member";
+  color: string;
 }
 
 export interface LiveSaving {

@@ -111,6 +111,14 @@ NEXT_PUBLIC_ALLOW_INDEXING=false
 
 ## 8. Обновления beta
 
+Для обновления `0.18.0` сначала выполнить в production Supabase SQL Editor файл:
+
+```text
+supabase/migrations/202609080001_participant_colors.sql
+```
+
+Миграция добавляет цвет участника и включает безопасное Realtime-обновление профилей. Существующие финансовые данные не изменяются.
+
 После изменения локального проекта:
 
 ```powershell

@@ -12,7 +12,7 @@ import { AddExpenseForm, AddSavingForm } from "./ManualEntryForms";
 
 afterEach(cleanup);
 
-const participant = { id: "11111111-1111-4111-8111-111111111111", name: "Катя", role: "owner" as const };
+const participant = { id: "11111111-1111-4111-8111-111111111111", name: "Катя", role: "owner" as const, color: "#C88F87" };
 const category = {
   id: "22222222-2222-4222-8222-222222222222",
   goalId: null,

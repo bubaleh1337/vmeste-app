@@ -70,6 +70,34 @@ export async function updateGoalAction(goalId: string, formData: FormData) {
   revalidatePath(`/goals/${goalId}`);
 }
 
+export async function updateParticipantColorAction(goalId: string, formData: FormData) {
+  if (!uuid.safeParse(goalId).success) fail(goalId, "invalid_goal");
+  const parsedColor = categoryColor.safeParse(formData.get("color"));
+  if (!parsedColor.success) fail(goalId, "invalid_participant_color");
+
+  const { supabase, userId } = await authenticated();
+  const { data: membership, error: membershipError } = await supabase
+    .from("goal_members")
+    .select("goal_id")
+    .eq("goal_id", goalId)
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .maybeSingle();
+  if (membershipError || !membership) fail(goalId, "participant_color_forbidden");
+
+  const { data: updatedProfile, error: updateError } = await supabase
+    .from("profiles")
+    .update({ participant_color: parsedColor.data.toUpperCase() })
+    .eq("id", userId)
+    .is("deleted_at", null)
+    .select("id")
+    .maybeSingle();
+  if (updateError || !updatedProfile) fail(goalId, "participant_color_failed");
+
+  revalidatePath("/");
+  revalidatePath(`/goals/${goalId}`);
+}
+
 export async function addSavingAction(goalId: string, previousState: ManualEntryState, formData: FormData): Promise<ManualEntryState> {
   if (!uuid.safeParse(goalId).success) fail(goalId, "invalid_goal");
   const parsed = z.object({

@@ -263,7 +263,7 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .goal-target-copy strong { font-size: 26px; line-height: 1.08; font-variant-numeric: tabular-nums; letter-spacing: -.035em; }
 .goal-progress-copy { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 16px; }
 .goal-progress-copy strong { color: var(--sage-dark); font-size: 14px; font-variant-numeric: tabular-nums; }
-.live-goal-progress { margin-top: 7px; }
+.live-goal-participant-progress { margin-top: 7px; }
 .goal-saved-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 9px; }
 .goal-saved-row span:first-child { color: var(--text); font-weight: 720; font-variant-numeric: tabular-nums; }
 .live-goal-add-button { width: calc(100% - 44px); margin: 0 22px 22px; display: flex; align-items: center; justify-content: center; text-align: center; text-decoration: none; }
@@ -318,6 +318,11 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .member-card > div:nth-child(2) span { color: var(--muted); font-size: 12px; margin-top: 2px; }
 .member-card > strong { font-variant-numeric: tabular-nums; }
 .member-card form { grid-column: 2 / -1; }
+.participant-color-form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding-top: 3px; }
+.participant-color-form label { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
+.participant-color-form label span { margin: 0; }
+.participant-color-form input[type="color"] { width: 34px; height: 30px; padding: 2px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-input); cursor: pointer; }
+.participant-color-form .text-button { min-height: 30px; padding: 4px 8px; font-size: 12px; }
 .danger-text-button { border: 0; background: transparent; color: var(--error); padding: 4px 0; font-size: 12px; }
 .owner-tools { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--line-soft); }
 .invite-maker { display: grid; gap: 10px; }
@@ -608,6 +613,16 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .participant-share-track > span { display: block; height: 100%; border-radius: inherit; background: var(--sage); }
 .participant-contribution-info small { color: var(--muted); font-size: 10px; }
 
+.participant-progress { display: grid; gap: 8px; }
+.participant-progress-track { display: flex; width: 100%; height: 8px; overflow: hidden; border-radius: 999px; background: #e7e2d9; }
+.participant-progress-segment { display: block; height: 100%; min-width: 0; transition: width .35s ease; }
+.participant-progress-segment + .participant-progress-segment { box-shadow: inset 2px 0 rgba(255,255,255,.72); }
+.participant-progress-legend { display: flex; flex-wrap: wrap; gap: 5px 14px; }
+.participant-progress-legend-item { display: grid; grid-template-columns: 8px minmax(0,auto) auto; align-items: center; gap: 5px; min-width: 0; color: var(--muted); font-size: 10px; line-height: 1.3; }
+.participant-progress-legend-item > i { width: 8px; height: 8px; border-radius: 50%; }
+.participant-progress-legend-item > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.participant-progress-legend-item > strong { color: var(--text); font-size: inherit; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
 @media (max-width: 640px) {
   .savings-forecast-grid { grid-template-columns: 1fr; }
   .savings-month-row { grid-template-columns: 88px minmax(70px, 1fr) auto; gap: 8px 10px; }
@@ -629,7 +644,7 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .overview-card-amount { display: block; margin-top: 15px; font-size: clamp(28px, 4vw, 42px); line-height: 1; letter-spacing: -.045em; font-variant-numeric: tabular-nums; }
 .overview-percent { flex: 0 0 auto; padding: 5px 8px; border-radius: 999px; background: var(--sage-soft); color: var(--sage-dark); font-size: 12px; font-weight: 780; font-variant-numeric: tabular-nums; }
 .overview-card-subline { margin-top: 8px; color: var(--muted); font-size: 12px; text-transform: capitalize; }
-.overview-progress { margin-top: 24px; }
+.overview-participant-progress { margin-top: 24px; }
 .overview-card-footer { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-top: 18px; color: var(--muted); font-size: 12px; }
 .overview-card-footer span:last-child, .overview-card-footer-inline { color: var(--sage-dark); font-weight: 720; }
 .expenses-summary-content { display: grid; grid-template-columns: minmax(0, 1fr) 118px; align-items: center; gap: 20px; }

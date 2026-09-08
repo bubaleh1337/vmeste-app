@@ -28,14 +28,19 @@ describe("LiveHome", () => {
         actualSavedMinor: 5_400_000_00n,
         progressPercent: 36,
         progressIncomplete: false,
+        participantContributions: [
+          { id: "user-1", name: "Катя", color: "#C88F87", amountMinor: 3_000_000_00n },
+          { id: "user-2", name: "Никита", color: "#7298B8", amountMinor: 2_400_000_00n },
+        ],
       }]}
     />);
 
     const card = within(screen.getByRole("article"));
-    expect(card.getByRole("progressbar", { name: "Прогресс накоплений" })).toHaveAttribute("aria-valuenow", "36");
+    expect(card.getByRole("progressbar", { name: "Общий прогресс по вкладам участников" })).toHaveAttribute("aria-valuenow", "36");
     expect(card.getByText("Сумма цели")).toBeInTheDocument();
     expect(screen.getByRole("article")).toHaveTextContent("15 000 000 ₸");
     expect(card.getByText("36.0%")).toBeInTheDocument();
+    expect(card.getByText("Никита")).toBeInTheDocument();
     expect(card.getByRole("link", { name: /Добавить накопление/ })).toHaveAttribute("href", "/goals/goal-1?panel=savings&add=saving#add-saving");
   });
 
@@ -54,13 +59,17 @@ describe("LiveHome", () => {
         actualSavedMinor: 5_400_000_00n,
         progressPercent: 36,
         progressIncomplete: false,
+        participantContributions: [
+          { id: "user-1", name: "Kate", color: "#C88F87", amountMinor: 3_000_000_00n },
+          { id: "user-2", name: "Nikita", color: "#7298B8", amountMinor: 2_400_000_00n },
+        ],
       }]}
     />);
 
     const card = within(screen.getByRole("article"));
     expect(card.getByText("Goal amount")).toBeInTheDocument();
     expect(card.getByText("Saved")).toBeInTheDocument();
-    expect(card.getByRole("progressbar", { name: "Savings progress" })).toHaveAttribute("aria-valuenow", "36");
+    expect(card.getByRole("progressbar", { name: "Overall progress by member contributions" })).toHaveAttribute("aria-valuenow", "36");
     expect(card.getByRole("link", { name: /Add savings/ })).toBeInTheDocument();
   });
 });

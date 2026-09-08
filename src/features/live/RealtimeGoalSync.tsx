@@ -6,10 +6,11 @@ import { createClient } from "@/lib/supabase/client";
 
 const REFRESH_DEBOUNCE_MS = 220;
 
-export function RealtimeGoalSync({ goalId }: { goalId: string }) {
+export function RealtimeGoalSync({ goalId, participantIds = [] }: { goalId: string; participantIds?: readonly string[] }) {
   const router = useRouter();
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [connectionProblem, setConnectionProblem] = useState(false);
+  const participantKey = [...participantIds].sort().join(",");
 
   useEffect(() => {
     let active = true;
@@ -56,8 +57,13 @@ export function RealtimeGoalSync({ goalId }: { goalId: string }) {
         .on("postgres_changes", { event: "*", schema: "public", table: "categorization_rules", filter: `goal_id=eq.${goalId}` }, scheduleRefresh)
         .on("postgres_changes", { event: "*", schema: "public", table: "goal_members", filter: `goal_id=eq.${goalId}` }, scheduleRefresh)
         .on("postgres_changes", { event: "*", schema: "public", table: "audit_log", filter: `goal_id=eq.${goalId}` }, scheduleRefresh)
-        .on("postgres_changes", { event: "*", schema: "public", table: "goals", filter: `id=eq.${goalId}` }, scheduleRefresh)
-        .subscribe((status, error) => {
+        .on("postgres_changes", { event: "*", schema: "public", table: "goals", filter: `id=eq.${goalId}` }, scheduleRefresh);
+
+      for (const participantId of participantKey.split(",").filter(Boolean)) {
+        channel.on("postgres_changes", { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${participantId}` }, scheduleRefresh);
+      }
+
+      channel.subscribe((status, error) => {
           if (!active) return;
           if (process.env.NODE_ENV === "development") {
             console.debug("[Realtime] Subscription status", status, error ?? "");
@@ -82,7 +88,7 @@ export function RealtimeGoalSync({ goalId }: { goalId: string }) {
       if (refreshTimer.current) clearTimeout(refreshTimer.current);
       if (channel) void supabase.removeChannel(channel);
     };
-  }, [goalId, router]);
+  }, [goalId, participantKey, router]);
 
   if (!connectionProblem) return null;
 

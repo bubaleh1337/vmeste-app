@@ -20,6 +20,7 @@ import { getOfficialFxRates } from "@/lib/fx/server";
 import type { AnalyticsStatus } from "@/features/demo/types";
 import { mergeCategorySettings, type ExpenseCategoryOverrideRow, type ExpenseCategoryRow, type ExpenseCategorySetting } from "@/features/expenses/category-settings";
 import { normalizeFont, normalizeLocale, normalizeTheme } from "@/lib/i18n";
+import { resolveParticipantColor } from "@/features/members/colors";
 
 type GoalReadRow = {
   id: string;
@@ -38,7 +39,7 @@ type MembershipRow = {
   status: "active" | "removed";
 };
 
-type ProfileRow = { id: string; display_name: string | null; avatar_url: string | null; timezone: string; locale?: string; theme_key?: string; font_key?: string };
+type ProfileRow = { id: string; display_name: string | null; avatar_url: string | null; timezone: string; locale?: string; theme_key?: string; font_key?: string; participant_color?: string | null };
 
 type SavingsReadRow = {
   id: string;
@@ -106,18 +107,35 @@ export async function listGoals(userId: string): Promise<LiveGoalCard[]> {
   if (!visibleGoals.length) return [];
 
   const goalIds = visibleGoals.map((row) => row.id);
-  const { data: savings, error: savingsError } = await supabase
-    .from("savings_transactions_read")
-    .select("goal_id, type, amount_minor_text, currency_code")
-    .in("goal_id", goalIds)
-    .is("deleted_at", null);
+  const [{ data: savings, error: savingsError }, { data: allMemberships, error: allMembershipsError }] = await Promise.all([
+    supabase
+      .from("savings_transactions_read")
+      .select("goal_id, type, amount_minor_text, currency_code, contributor_user_id")
+      .in("goal_id", goalIds)
+      .is("deleted_at", null),
+    supabase
+      .from("goal_members")
+      .select("goal_id, user_id, role, status")
+      .in("goal_id", goalIds)
+      .eq("status", "active"),
+  ]);
   if (savingsError) throw savingsError;
+  if (allMembershipsError) throw allMembershipsError;
+
+  const allMembershipRows = (allMemberships ?? []) as MembershipRow[];
+  const participantIds = Array.from(new Set(allMembershipRows.map((row) => row.user_id)));
+  const profileResult = participantIds.length
+    ? await supabase.from("profiles").select("id, display_name, participant_color").in("id", participantIds).is("deleted_at", null)
+    : { data: [], error: null };
+  if (profileResult.error) throw profileResult.error;
+  const participantProfiles = new Map(((profileResult.data ?? []) as ProfileRow[]).map((row) => [row.id, row]));
 
   const goalCurrency = new Map(visibleGoals.map((row) => [row.id, currency(row.currency_code)]));
-  const savingsRows = (savings ?? []) as Pick<SavingsReadRow, "goal_id" | "type" | "amount_minor_text" | "currency_code">[];
+  const savingsRows = (savings ?? []) as Pick<SavingsReadRow, "goal_id" | "type" | "amount_minor_text" | "currency_code" | "contributor_user_id">[];
   const needsFx = savingsRows.some((row) => currency(row.currency_code) !== goalCurrency.get(row.goal_id));
   const fxRates = needsFx ? await getOfficialFxRates() : null;
   const totals = new Map<string, bigint>();
+  const participantTotals = new Map<string, bigint>();
   const incompleteGoals = new Set<string>();
 
   for (const row of savingsRows) {
@@ -131,6 +149,8 @@ export async function listGoals(userId: string): Promise<LiveGoalCard[]> {
     }
     const signed = signedSavingsAmount({ type: row.type, amountMinor: converted });
     totals.set(row.goal_id, (totals.get(row.goal_id) ?? 0n) + signed);
+    const participantKey = `${row.goal_id}:${row.contributor_user_id}`;
+    participantTotals.set(participantKey, (participantTotals.get(participantKey) ?? 0n) + signed);
   }
 
   return visibleGoals.map((row) => {
@@ -148,6 +168,15 @@ export async function listGoals(userId: string): Promise<LiveGoalCard[]> {
       actualSavedMinor,
       progressPercent: calculateProgressPercent(targetAmountMinor, actualSavedMinor),
       progressIncomplete: incompleteGoals.has(row.id),
+      participantContributions: allMembershipRows.filter((member) => member.goal_id === row.id).map((member) => {
+        const participantProfile = participantProfiles.get(member.user_id);
+        return {
+          id: member.user_id,
+          name: participantProfile?.display_name ?? "Участник",
+          color: resolveParticipantColor(participantProfile?.participant_color, member.user_id),
+          amountMinor: participantTotals.get(`${row.id}:${member.user_id}`) ?? 0n,
+        };
+      }),
     };
   });
 }
@@ -174,7 +203,7 @@ export async function getGoalSnapshot(goalId: string, userId: string): Promise<L
 
   const profileIds = memberships.map((row) => row.user_id);
   const profileResult = profileIds.length
-    ? await supabase.from("profiles").select("id, display_name, avatar_url, timezone, locale, theme_key, font_key").in("id", profileIds)
+    ? await supabase.from("profiles").select("id, display_name, avatar_url, timezone, locale, theme_key, font_key, participant_color").in("id", profileIds)
     : { data: [], error: null };
   if (profileResult.error) throw profileResult.error;
   const profiles = new Map(((profileResult.data ?? []) as ProfileRow[]).map((row) => [row.id, row]));
@@ -195,6 +224,7 @@ export async function getGoalSnapshot(goalId: string, userId: string): Promise<L
     id: row.user_id,
     name: profiles.get(row.user_id)?.display_name ?? "Участник",
     role: row.role,
+    color: resolveParticipantColor(profiles.get(row.user_id)?.participant_color, row.user_id),
   }));
 
   const allSavings: LiveSaving[] = ((savingsResult.data ?? []) as SavingsReadRow[]).map((row) => ({

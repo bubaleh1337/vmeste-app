@@ -28,6 +28,7 @@ create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   display_name text check (display_name is null or char_length(trim(display_name)) between 1 and 80),
   avatar_url text,
+  participant_color text check (participant_color is null or participant_color ~ '^#[0-9A-Fa-f]{6}$'),
   locale text not null default 'ru-KZ',
   timezone text not null default 'Asia/Atyrau',
   theme_key text not null default 'sage' check (theme_key in ('sage','rose','lavender','ocean','sky','honey')),
@@ -1071,6 +1072,7 @@ begin
   end if;
 
   foreach table_name in array array[
+    'profiles',
     'goals',
     'goal_members',
     'savings_transactions',
