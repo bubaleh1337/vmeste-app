@@ -252,6 +252,7 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .simplified-heading { margin-bottom: 18px; }
 .simplified-heading h1 { margin-bottom: 0; }
 .simplified-heading-row { align-items: end; }
+.simplified-heading-row > .role-chip { display: inline-flex; margin-bottom: 20px; }
 .role-chip { border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 6px 10px; color: var(--muted); font-size: 12px; white-space: nowrap; }
 .back-link { color: var(--sage-dark); text-decoration: none; font-weight: 720; }
 
@@ -635,7 +636,7 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .overview-savings-card { grid-column: 1; grid-row: 1; }
 .overview-expenses-card { grid-column: 2; grid-row: 1; }
 .overview-savings-detail, .overview-expenses-detail { grid-column: 1 / -1; grid-row: 2; }
-.overview-finance-card { position: relative; min-width: 0; min-height: 224px; padding: 22px; border: 1px solid #d8d3c8; border-radius: 22px; background: var(--card); box-shadow: var(--shadow); text-align: left; color: var(--text); transition: border-color .2s ease, transform .2s ease, box-shadow .2s ease; }
+.overview-finance-card { position: relative; min-width: 0; min-height: 224px; padding: 22px 22px 40px; border: 1px solid #d8d3c8; border-radius: 22px; background: var(--card); box-shadow: var(--shadow); text-align: left; color: var(--text); transition: border-color .2s ease, transform .2s ease, box-shadow .2s ease; }
 .overview-finance-card:hover { border-color: #b9b4a9; transform: translateY(-1px); }
 .overview-finance-card.is-open { border-color: color-mix(in srgb, var(--sage) 62%, var(--line)); box-shadow: 0 16px 38px rgba(56, 50, 41, .075); }
 .overview-card-content { min-height: 178px; }
@@ -647,6 +648,7 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 .overview-participant-progress { margin-top: 24px; }
 .overview-card-footer { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-top: 18px; color: var(--muted); font-size: 12px; }
 .overview-card-footer span:last-child, .overview-card-footer-inline { color: var(--sage-dark); font-weight: 720; }
+.overview-card-footer span:last-child { padding-right: 30px; }
 .expenses-summary-content { display: grid; grid-template-columns: minmax(0, 1fr) 118px; align-items: center; gap: 20px; }
 .overview-expense-copy { min-width: 0; }
 .overview-card-footer-inline { display: block; margin-top: 24px; font-size: 12px; }
@@ -681,7 +683,7 @@ button:disabled { cursor: not-allowed; opacity: 0.5; }
 @media (max-width: 760px) {
   .financial-overview-grid { grid-template-columns: 1fr; }
   .overview-savings-card, .overview-savings-detail, .overview-expenses-card, .overview-expenses-detail { grid-column: 1; grid-row: auto; }
-  .overview-finance-card { min-height: 194px; padding: 18px; }
+  .overview-finance-card { min-height: 194px; padding: 18px 18px 36px; }
   .overview-card-content { min-height: 150px; }
   .expenses-summary-content { grid-template-columns: minmax(0, 1fr) 92px; gap: 14px; }
   .overview-mini-donut { width: 88px; }
