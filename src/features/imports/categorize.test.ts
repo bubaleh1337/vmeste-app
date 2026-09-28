@@ -2,9 +2,10 @@ import { describe, expect, it } from "vitest";
 import { normalizeCategorizationPattern, suggestExpenseCategory } from "./categorize";
 
 const categories = [
-  { id: "food", name: "Продукты", defaultDiscretionary: false },
-  { id: "cafe", name: "Кафе и рестораны", defaultDiscretionary: true },
-  { id: "review", name: "Требует проверки", defaultDiscretionary: false },
+  { id: "food", key: "groceries", name: "Продукты", defaultDiscretionary: false },
+  { id: "cafe", key: "cafes", name: "Кафе и рестораны", defaultDiscretionary: true },
+  { id: "sports", key: "sports_fitness", name: "Спорт и фитнес", defaultDiscretionary: false },
+  { id: "review", key: "needs_review", name: "Требует проверки", defaultDiscretionary: false },
 ];
 
 describe("expense categorization", () => {
@@ -30,9 +31,20 @@ describe("expense categorization", () => {
     expect(suggestion.source).toBe("builtin");
   });
 
+  it("recognizes yoga and gym expenses as sports in both interface languages", () => {
+    expect(suggestExpenseCategory("Абонемент на йогу", categories).categoryId).toBe("sports");
+    const englishCategories = categories.map((category) => category.key === "sports_fitness" ? { ...category, name: "Sports & fitness" } : category);
+    expect(suggestExpenseCategory("FITNESS GYM MEMBERSHIP", englishCategories).categoryId).toBe("sports");
+  });
+
   it("sends unknown descriptions to review", () => {
     const suggestion = suggestExpenseCategory("UNKNOWN MERCHANT 42", categories);
     expect(suggestion.categoryId).toBe("review");
     expect(suggestion.analyticsStatus).toBe("needs_review");
+  });
+
+  it("keeps the review fallback working with English system names", () => {
+    const englishCategories = categories.map((category) => category.key === "needs_review" ? { ...category, name: "Needs review" } : category);
+    expect(suggestExpenseCategory("UNKNOWN MERCHANT 42", englishCategories).categoryId).toBe("review");
   });
 });

@@ -1,5 +1,6 @@
 export interface ExpenseCategoryOption {
   id: string;
+  key?: string;
   name: string;
   defaultDiscretionary: boolean;
 }
@@ -12,23 +13,24 @@ export interface CategorizationRuleOption {
   priority: number;
 }
 
-const RULES: { category: string; patterns: RegExp[] }[] = [
-  { category: "Продукты", patterns: [/\bmagnum\b/i, /\bsmall\b/i, /\bgalmart\b/i, /\bмагазин\b/i, /\bsupermarket\b/i, /\bgrocery\b/i, /\bрынок\b/i] },
-  { category: "Кафе и рестораны", patterns: [/кофе/i, /coffee/i, /cafe/i, /кафе/i, /restaurant/i, /ресторан/i, /burger/i, /pizza/i, /kfc/i, /starbucks/i] },
-  { category: "Транспорт", patterns: [/такси/i, /taxi/i, /yandex\s*go/i, /indrive/i, /uber/i, /автобус/i, /bus/i, /транспорт/i, /parking/i, /парков/i] },
-  { category: "Жильё и коммунальные услуги", patterns: [/коммун/i, /квартплат/i, /электроэнерг/i, /газ/i, /водоканал/i, /аренд/i, /rent/i, /utility/i] },
-  { category: "Здоровье и аптеки", patterns: [/аптек/i, /pharmacy/i, /clinic/i, /клиник/i, /medical/i, /медицин/i, /стомат/i] },
-  { category: "Красота и уход", patterns: [/beauty/i, /salon/i, /салон/i, /маникюр/i, /космет/i, /barber/i, /парикмах/i] },
-  { category: "Одежда и покупки", patterns: [/zara/i, /h&m/i, /lc waikiki/i, /одежд/i, /clothes/i, /fashion/i, /kaspi магазин/i, /wildberries/i, /ozon/i] },
-  { category: "Подписки и связь", patterns: [/netflix/i, /spotify/i, /youtube/i, /подпис/i, /tele2/i, /beeline/i, /activ/i, /kcell/i, /internet/i, /интернет/i, /mobile/i] },
-  { category: "Развлечения", patterns: [/cinema/i, /кино/i, /steam/i, /playstation/i, /xbox/i, /game/i, /театр/i, /развлеч/i] },
-  { category: "Образование", patterns: [/course/i, /курс/i, /university/i, /университет/i, /school/i, /школ/i, /udemy/i, /coursera/i] },
-  { category: "Путешествия", patterns: [/hotel/i, /отел/i, /booking/i, /airbnb/i, /air astana/i, /flyarystan/i, /авиабилет/i, /flight/i, /travel/i] },
-  { category: "Питомцы", patterns: [/pet/i, /зоомаг/i, /ветерин/i, /ветклиник/i, /корм.*кот/i, /корм.*собак/i] },
-  { category: "Подарки и помощь", patterns: [/gift/i, /подар/i, /благотвор/i, /charity/i] },
-  { category: "Налоги и комиссии", patterns: [/налог/i, /tax/i, /комисси/i, /commission/i, /fee/i] },
-  { category: "Переводы", patterns: [/перевод/i, /transfer/i] },
-  { category: "Наличные", patterns: [/снятие налич/i, /cash withdrawal/i, /atm/i, /банкомат/i] },
+const RULES: { categoryKey: string; category: string; patterns: RegExp[] }[] = [
+  { categoryKey: "groceries", category: "Продукты", patterns: [/\bmagnum\b/i, /\bsmall\b/i, /\bgalmart\b/i, /\bмагазин\b/i, /\bsupermarket\b/i, /\bgrocery\b/i, /\bрынок\b/i] },
+  { categoryKey: "cafes", category: "Кафе и рестораны", patterns: [/кофе/i, /coffee/i, /cafe/i, /кафе/i, /restaurant/i, /ресторан/i, /burger/i, /pizza/i, /kfc/i, /starbucks/i] },
+  { categoryKey: "transport", category: "Транспорт", patterns: [/такси/i, /taxi/i, /yandex\s*go/i, /indrive/i, /uber/i, /автобус/i, /bus/i, /транспорт/i, /parking/i, /парков/i] },
+  { categoryKey: "housing", category: "Жильё и коммунальные услуги", patterns: [/коммун/i, /квартплат/i, /электроэнерг/i, /газ/i, /водоканал/i, /аренд/i, /rent/i, /utility/i] },
+  { categoryKey: "health", category: "Здоровье и аптеки", patterns: [/аптек/i, /pharmacy/i, /clinic/i, /клиник/i, /medical/i, /медицин/i, /стомат/i] },
+  { categoryKey: "sports_fitness", category: "Спорт и фитнес", patterns: [/йог[аиуы]?/i, /yoga/i, /фитнес/i, /fitness/i, /спортзал/i, /тренаж[её]р/i, /\bgym\b/i, /пилатес/i, /pilates/i, /бассейн/i, /swimming/i, /кроссфит/i, /crossfit/i] },
+  { categoryKey: "beauty", category: "Красота и уход", patterns: [/beauty/i, /salon/i, /салон/i, /маникюр/i, /космет/i, /barber/i, /парикмах/i] },
+  { categoryKey: "shopping", category: "Одежда и покупки", patterns: [/zara/i, /h&m/i, /lc waikiki/i, /одежд/i, /clothes/i, /fashion/i, /kaspi магазин/i, /wildberries/i, /ozon/i] },
+  { categoryKey: "subscriptions", category: "Подписки и связь", patterns: [/netflix/i, /spotify/i, /youtube/i, /подпис/i, /tele2/i, /beeline/i, /activ/i, /kcell/i, /internet/i, /интернет/i, /mobile/i] },
+  { categoryKey: "entertainment", category: "Развлечения", patterns: [/cinema/i, /кино/i, /steam/i, /playstation/i, /xbox/i, /game/i, /театр/i, /развлеч/i] },
+  { categoryKey: "education", category: "Образование", patterns: [/course/i, /курс/i, /university/i, /университет/i, /school/i, /школ/i, /udemy/i, /coursera/i] },
+  { categoryKey: "travel", category: "Путешествия", patterns: [/hotel/i, /отел/i, /booking/i, /airbnb/i, /air astana/i, /flyarystan/i, /авиабилет/i, /flight/i, /travel/i] },
+  { categoryKey: "pets", category: "Питомцы", patterns: [/pet/i, /зоомаг/i, /ветерин/i, /ветклиник/i, /корм.*кот/i, /корм.*собак/i] },
+  { categoryKey: "gifts", category: "Подарки и помощь", patterns: [/gift/i, /подар/i, /благотвор/i, /charity/i] },
+  { categoryKey: "taxes_fees", category: "Налоги и комиссии", patterns: [/налог/i, /tax/i, /комисси/i, /commission/i, /fee/i] },
+  { categoryKey: "transfers", category: "Переводы", patterns: [/перевод/i, /transfer/i] },
+  { categoryKey: "cash", category: "Наличные", patterns: [/снятие налич/i, /cash withdrawal/i, /atm/i, /банкомат/i] },
 ];
 
 export function normalizeCategorizationPattern(value: string): string {
@@ -82,7 +84,7 @@ export function suggestExpenseCategory(
 
   const match = RULES.find((rule) => rule.patterns.some((pattern) => pattern.test(description)));
   const matchedCategory = match
-    ? categories.find((category) => category.name.toLocaleLowerCase("ru-RU") === match.category.toLocaleLowerCase("ru-RU"))
+    ? categories.find((category) => category.key === match.categoryKey || category.name.toLocaleLowerCase("ru-RU") === match.category.toLocaleLowerCase("ru-RU"))
     : undefined;
 
   if (matchedCategory) {
@@ -94,8 +96,8 @@ export function suggestExpenseCategory(
     };
   }
 
-  const reviewCategory = categories.find((category) => /требует проверки/i.test(category.name));
-  const fallbackCategory = reviewCategory ?? categories.find((category) => /другое/i.test(category.name)) ?? categories[0];
+  const reviewCategory = categories.find((category) => category.key === "needs_review" || /требует проверки|needs review/i.test(category.name));
+  const fallbackCategory = reviewCategory ?? categories.find((category) => category.key === "other" || /другое|other/i.test(category.name)) ?? categories[0];
   return {
     categoryId: fallbackCategory?.id ?? "",
     analyticsStatus: reviewCategory ? "needs_review" : "included",

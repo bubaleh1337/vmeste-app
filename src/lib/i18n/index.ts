@@ -56,6 +56,7 @@ const SYSTEM_CATEGORY_NAMES: Record<string, { ru: string; en: string }> = {
   transport: { ru: "Транспорт", en: "Transport" },
   housing: { ru: "Жильё и коммунальные услуги", en: "Housing & utilities" },
   health: { ru: "Здоровье и аптеки", en: "Health & pharmacy" },
+  sports_fitness: { ru: "Спорт и фитнес", en: "Sports & fitness" },
   beauty: { ru: "Красота и уход", en: "Beauty & care" },
   shopping: { ru: "Одежда и покупки", en: "Clothing & shopping" },
   subscriptions: { ru: "Подписки и связь", en: "Subscriptions & communications" },

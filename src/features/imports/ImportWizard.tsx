@@ -32,7 +32,7 @@ interface Props {
   currencyCode: CurrencyCode;
   participants: { id: string; name: string }[];
   currentUserId: string;
-  categories: { id: string; name: string; defaultDiscretionary: boolean }[];
+  categories: { id: string; key?: string; name: string; defaultDiscretionary: boolean }[];
   categorizationRules: CategorizationRuleOption[];
   locale: AppLocale;
   initialTargetKind?: ImportTargetKind;

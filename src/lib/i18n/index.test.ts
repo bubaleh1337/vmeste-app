@@ -26,6 +26,7 @@ describe("interface preferences", () => {
   it("localizes system categories but preserves unknown custom names", () => {
     expect(systemCategoryName("groceries", "Продукты", "en")).toBe("Groceries");
     expect(systemCategoryName("groceries", "Продукты", "ru")).toBe("Продукты");
+    expect(systemCategoryName("sports_fitness", "Спорт и фитнес", "en")).toBe("Sports & fitness");
     expect(systemCategoryName("custom-key", "Хобби", "en")).toBe("Хобби");
   });
 });
