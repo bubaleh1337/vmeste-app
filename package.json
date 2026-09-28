@@ -1,6 +1,6 @@
 {
   "name": "shared-savings-pwa",
-  "version": "0.18.2",
+  "version": "0.18.3",
   "private": true,
   "scripts": {
     "dev": "next dev",

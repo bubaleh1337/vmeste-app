@@ -368,6 +368,10 @@ export function ImportWizard({ goalId, currencyCode, participants, currentUserId
     setPreparedRows((rows) => rows.map((row) => row.rowNumber === rowNumber ? { ...row, savingsType } : row));
   }
 
+  function changeDiscretionary(rowNumber: number, isDiscretionary: boolean) {
+    setPreparedRows((rows) => rows.map((row) => row.rowNumber === rowNumber ? { ...row, isDiscretionary } : row));
+  }
+
   async function commitImport() {
     if (!file || !fileType || fileAlreadyImported || selectedCount === 0) return;
     setBusy(true);
@@ -429,7 +433,7 @@ export function ImportWizard({ goalId, currencyCode, participants, currentUserId
       </section>
 
       {file && preparedRows.length > 0 && <section className="import-step">
-        <div className="import-step-heading"><span>2</span><div><h2>{tr(locale, "Проверь операции", "Review transactions")}</h2><p>{tr(locale, "Категории определены локально по описанию. Измени неверную категорию или удали лишнюю строку.", "Categories are suggested locally from the description. Change an incorrect category or remove an unnecessary row.")}</p></div></div>
+        <div className="import-step-heading"><span>2</span><div><h2>{tr(locale, "Проверь операции", "Review transactions")}</h2><p>{tr(locale, "Категории определены локально по описанию. Измени категорию, отметь расходы, которых можно было избежать, или удали лишнюю строку.", "Categories are suggested locally from the description. Change a category, mark expenses that could have been avoided or remove an unnecessary row.")}</p></div></div>
         {fileAlreadyImported && <div className="import-alert error" role="alert">{tr(locale, "Этот файл уже был импортирован в эту цель. Повторный импорт заблокирован.", "This file has already been imported into this goal. Duplicate import is blocked.")}</div>}
         <div className="import-summary simple-summary">
           <div><span>{tr(locale, "Операций", "Transactions")}</span><strong>{preparedRows.length}</strong></div>
@@ -450,7 +454,7 @@ export function ImportWizard({ goalId, currencyCode, participants, currentUserId
                 <div className="import-list-amount">{row.amountMinor ? formatMoney(BigInt(row.amountMinor), row.currencyCode as CurrencyCode, localeTag(locale)) : "—"}</div>
               </div>
               <div className="import-list-controls">
-                {targetKind === "expenses" ? <label>{tr(locale, "Категория", "Category")}<select value={row.categoryId ?? ""} disabled={duplicate || invalid} onChange={(event) => changeCategory(row.rowNumber, event.target.value)}>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label> : <label>{tr(locale, "Тип", "Type")}<select value={row.savingsType ?? "contribution"} disabled={duplicate || invalid} onChange={(event) => changeSavingsType(row.rowNumber, event.target.value as SavingsType)}>{Object.entries(savingsTypeLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>}
+                {targetKind === "expenses" ? <><label>{tr(locale, "Категория", "Category")}<select value={row.categoryId ?? ""} disabled={duplicate || invalid} onChange={(event) => changeCategory(row.rowNumber, event.target.value)}>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label><label className="import-discretionary"><input type="checkbox" checked={row.isDiscretionary} disabled={duplicate || invalid} onChange={(event) => changeDiscretionary(row.rowNumber, event.target.checked)} /><span>{tr(locale, "Можно было избежать", "Could have avoided")}</span></label></> : <label>{tr(locale, "Тип", "Type")}<select value={row.savingsType ?? "contribution"} disabled={duplicate || invalid} onChange={(event) => changeSavingsType(row.rowNumber, event.target.value as SavingsType)}>{Object.entries(savingsTypeLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>}
                 {duplicate ? <span className="import-row-status">{tr(locale, "Уже есть в истории", "Already in history")}</span> : invalid ? <span className="import-row-status error-text">{errorLabel(row.errorCode ?? "", locale)}</span> : <button type="button" className="text-danger-button" onClick={() => removeRow(row.rowNumber)}>{tr(locale, "Удалить", "Remove")}</button>}
               </div>
             </article>;
