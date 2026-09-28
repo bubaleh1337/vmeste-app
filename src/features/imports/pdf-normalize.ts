@@ -9,7 +9,7 @@ export interface PdfStatementParseResult {
   sheet: ParsedSheet;
   currencyCode: CurrencyCode;
   transactionCount: number;
-  parser: "otbasy_deposit" | "halyk_account" | "generic";
+  parser: "otbasy_deposit" | "halyk_account" | "kaspi_gold" | "generic";
   sourceProvider?: string | null;
   sourceAccountHint?: string | null;
 }
@@ -120,6 +120,75 @@ function appendDescriptionContinuation(description: string, continuation: readon
     .filter((line) => !isNoiseLine(line))
     .filter((line) => !/^место печати банка$/i.test(line));
   return [description, ...useful].join(" ").replace(/\s+/g, " ").trim();
+}
+
+function normalizeStatementDate(value: string): string {
+  const parts = value.split(/[./]/);
+  if (parts.length !== 3 || parts[2].length !== 2) return value;
+  const shortYear = Number(parts[2]);
+  const fullYear = shortYear <= 69 ? 2000 + shortYear : 1900 + shortYear;
+  return `${parts[0]}.${parts[1]}.${fullYear}`;
+}
+
+function isKaspiGoldStatement(lines: readonly string[]): boolean {
+  const full = lines.map(cleanLine).join("\n").toLocaleLowerCase("ru-RU");
+  return /выписка\s+по\s+kaspi\s+gold/.test(full) && /дата\s+сумма\s+операция\s+детали/.test(full);
+}
+
+function isKaspiContinuationNoise(line: string): boolean {
+  const value = cleanLine(line).toLocaleLowerCase("ru-RU");
+  return [
+    /^ао\s+[«"]?kaspi\s+bank/,
+    /^приложение к справке/,
+    /^дата\s+сумма\s+операция\s+детали$/,
+    /^-\s*сумма заблокирована/,
+    /^раздел «краткое содержание операций/,
+    /^счета» содержит информацию/,
+  ].some((pattern) => pattern.test(value));
+}
+
+/**
+ * Kaspi Gold statements use two-digit years and a compact table with the
+ * columns date, signed amount, operation and details. Wrapped operation/details
+ * text is emitted on the following visual line by PDF.js.
+ */
+function parseKaspiGoldRows(
+  lines: readonly string[],
+  currencyCode: CurrencyCode,
+  targetKind: ImportTargetKind,
+): unknown[][] {
+  const cleaned = lines.map(cleanLine);
+  const transactions: unknown[][] = [];
+  const row = /^(\d{1,2}[./]\d{1,2}[./]\d{2,4})\s+([+\-−–—])\s*((?:\d{1,3}(?:[\s\u00a0\u202f]\d{3})+|\d+)(?:[,.]\d{2}))\s*(₸|₽|€|\$|KZT|RUB|EUR|USD)?\s+(.+)$/iu;
+
+  for (let index = 0; index < cleaned.length; index += 1) {
+    const match = cleaned[index].match(row);
+    if (!match) continue;
+
+    let nextIndex = index + 1;
+    while (nextIndex < cleaned.length && !row.test(cleaned[nextIndex])) nextIndex += 1;
+    const continuation = cleaned
+      .slice(index + 1, nextIndex)
+      .filter((line) => !isKaspiContinuationNoise(line));
+    const description = appendDescriptionContinuation(match[5], continuation) || "Банковская операция";
+    const amount = normalizedAmount(match[3], match[2]);
+    if (targetKind === "expenses" && !amount.startsWith("-")) {
+      index = Math.max(index, nextIndex - 1);
+      continue;
+    }
+
+    const rowCurrency = normalizeCurrency(match[4]) ?? currencyCode;
+    transactions.push([
+      normalizeStatementDate(match[1]),
+      description,
+      amount,
+      inferSavingsType(description, match[2]),
+      rowCurrency,
+      extractExternalTransactionId(description),
+    ]);
+    index = Math.max(index, nextIndex - 1);
+  }
+  return transactions;
 }
 
 /**
@@ -277,6 +346,16 @@ export function parsePdfStatementLines(
   const selected = candidateLines(sourceLines);
   const lines = selected.lines;
   const currencyCode = detectStatementCurrency(sourceLines, fallbackCurrency);
+
+  if (isKaspiGoldStatement(sourceLines)) {
+    const transactions = parseKaspiGoldRows(sourceLines, currencyCode, targetKind);
+    return {
+      sheet: { name: "PDF", rows: [["Дата", "Описание", "Сумма", "Тип", "Валюта", "ID операции"], ...transactions] },
+      currencyCode,
+      transactionCount: transactions.length,
+      parser: "kaspi_gold",
+    };
+  }
 
   if (isHalykAccountStatement(sourceLines)) {
     const transactions = parseHalykAccountRows(sourceLines, currencyCode, targetKind);

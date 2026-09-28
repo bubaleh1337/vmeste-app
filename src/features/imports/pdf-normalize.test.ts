@@ -78,4 +78,30 @@ describe("PDF statement normalization", () => {
     expect(result.transactionCount).toBe(2);
     expect(result.sheet.rows[1]?.[2]).toBe("-12500.00");
   });
+
+  it("parses current Kaspi Gold rows with two-digit years and wrapped details", () => {
+    const result = parsePdfStatementLines([
+      "СПРАВКА об остатке на счете",
+      "Выписка по Kaspi Gold за период с 01.09.26 по 28.09.26 прилагается.",
+      "ВЫПИСКА по Kaspi Gold за период с 01.09.26 по 28.09.26",
+      "Доступно на 28.09.26: + 90,00 ₸ Валюта счета: теңге",
+      "Краткое содержание операций по карте:",
+      "Покупки - 20 000,00 ₸",
+      "Дата Сумма Операция Детали",
+      "27.09.26 - 700,00 ₸ Перевод Получатель А.",
+      "24.09.26 + 4 000,00 ₸ Поступление со С Kaspi Депозита",
+      "своего счета",
+      "23.09.26 - 2 500,00 ₸ Покупка МАГАЗИН",
+      "АО «Kaspi Bank», БИК CASPKZKA, www.kaspi.kz",
+      "Приложение к Справке №123 от 28 сентября 2026",
+      "21.09.26 - 950,00 ₸ Разное Комиссия за перевод",
+    ], "expenses", "KZT");
+
+    expect(result.parser).toBe("kaspi_gold");
+    expect(result.currencyCode).toBe("KZT");
+    expect(result.transactionCount).toBe(3);
+    expect(result.sheet.rows.slice(1).map((row) => row[0])).toEqual(["27.09.2026", "23.09.2026", "21.09.2026"]);
+    expect(result.sheet.rows.slice(1).map((row) => row[2])).toEqual(["-700.00", "-2500.00", "-950.00"]);
+    expect(result.sheet.rows[2]?.[1]).toBe("Покупка МАГАЗИН");
+  });
 });
